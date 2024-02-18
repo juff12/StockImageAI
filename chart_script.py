@@ -77,7 +77,7 @@ nasdaq_100_tickers = [
 python_path = str(Path.cwd()).strip('repos\StockImageAI\StockImageAI') + '\\anaconda3\python.exe '
 script_path = str(Path.cwd()) + '\chart_image_create.py '
 
-for ticker in sp500_tickers[25:]:
+for ticker in sp500_tickers:
     ticker = ticker.lower()
     path = python_path + script_path + ticker
     os.system(path)
