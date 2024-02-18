@@ -2,7 +2,6 @@ import os
 import subprocess
 import time
 from pathlib import Path
-
 sp500_tickers = [
     "MMM", "ABT", "ABBV", "ACN", "ATVI", "ADBE", "AMD", "AES", "AFL", "A",
     "APD", "AKAM", "ALK", "ALB", "ARE", "ALGN", "ALLE", "LNT", "ALL", "GOOGL",
@@ -75,3 +74,10 @@ nasdaq_100_tickers = [
     "XLNX", "ZM"
 ]
 
+python_path = str(Path.cwd()).strip('repos\StockImageAI\StockImageAI') + '\\anaconda3\python.exe '
+script_path = str(Path.cwd()) + '\chart_image_create.py '
+
+for ticker in sp500_tickers[25:]:
+    ticker = ticker.lower()
+    path = python_path + script_path + ticker
+    os.system(path)

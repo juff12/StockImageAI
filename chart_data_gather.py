@@ -89,7 +89,7 @@ def get_ticker_data(presets: tuple, client: RESTClient):
 # connect to API
 client = RESTClient(api_key="")
 
-start = '2019-01-01'
+start = '2018-01-01'
 end = '2024-01-01'
 limit = 50000
 

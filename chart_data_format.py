@@ -119,5 +119,8 @@ def format_data(ticker: str, time_interval: str):
 
 for ticker in sp500_tickers:
     format_data(ticker.lower(),'day')
-    #for time_interval in time_intervals:
-        #format_data(ticker.lower(), time_interval)
+    format_data(ticker.lower(),'1_hour')
+    format_data(ticker.lower(),'4_hour')
+    
+    for time_interval in time_intervals:
+        format_data(ticker.lower(), time_interval)
