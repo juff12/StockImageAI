@@ -1,8 +1,8 @@
 import os
-import subprocess
-import time
 from pathlib import Path
-sp500_tickers = [
+
+def main():
+    sp500_tickers = [
     "MMM", "ABT", "ABBV", "ACN", "ATVI", "ADBE", "AMD", "AES", "AFL", "A",
     "APD", "AKAM", "ALK", "ALB", "ARE", "ALGN", "ALLE", "LNT", "ALL", "GOOGL",
     "GOOG", "MO", "AMZN", "AMCR", "AEE", "AAL", "AEP", "AXP", "AIG",
@@ -60,7 +60,7 @@ sp500_tickers = [
     "WU", "WRK", "WY", "WHR", "WMB", "WLTW", "WYNN", "XEL", "XLNX",
     "XYL", "YUM", "ZBRA", "ZBH", "ZION", "ZTS"
 ]
-nasdaq_100_tickers = [
+    nasdaq_100_tickers = [
     "AAPL", "ADBE", "ADI", "ADP", "ADSK", "ALGN", "ALXN", "AMAT", "AMD", "AMGN",
     "ANSS", "ASML", "ATVI", "AVGO", "BIDU", "BIIB", "BKNG", "BMRN", "CDNS", "CDW",
     "CERN", "CHKP", "CHTR", "CMCSA", "COST", "CPRT", "CSCO", "CSX", "CTAS", "CTSH",
@@ -73,10 +73,12 @@ nasdaq_100_tickers = [
     "TCOM", "TEAM", "TMUS", "TSLA", "TXN", "VRSK", "VRTX", "WBA", "WDAY", "XEL",
     "XLNX", "ZM"
 ]
+    python_path = str(Path.cwd()).replace('repos\StockImageAI','') + '\\anaconda3\python.exe '
+    script_path = str(Path.cwd()) + '\chart_image_create.py '
+    for ticker in sp500_tickers:
+        ticker = ticker.lower()
+        path = python_path + script_path + ticker
+        os.system(path)
 
-python_path = str(Path.cwd()).replace('repos\StockImageAI','') + '\\anaconda3\python.exe '
-script_path = str(Path.cwd()) + '\chart_image_create.py '
-for ticker in sp500_tickers:
-    ticker = ticker.lower()
-    path = python_path + script_path + ticker
-    os.system(path)
+if __name__ == '__main__':
+    main()
