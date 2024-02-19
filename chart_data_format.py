@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 def trunc_datetime_month(someDate):
+    # arbitrary values for setting all values equal except the month
     return someDate.replace(year=2018, day=1, hour=0, minute=0, second=0, microsecond=0)
 
 def format_data(ticker: str, time_interval: str):
@@ -22,10 +23,9 @@ def format_data(ticker: str, time_interval: str):
     df = df[['date','open','high','low','close','volume']]
 
     # dictionary of months for fast lookups
-    months = {datetime(2018,1,1): 1,datetime(2018,2,1): 2,datetime(2018,3,1): 3,
-              datetime(2018,4,1): 4,datetime(2018,5,1): 5,datetime(2018,6,1): 6,
-              datetime(2018,7,1): 7,datetime(2018,8,1): 8,datetime(2018,9,1): 9,
-              datetime(2018,10,1): 10,datetime(2018,11,1): 11,datetime(2018,12,1): 12}
+    datetime_val = [datetime(2018,i,1) for i in range(1,13)]
+    months = dict.fromkeys(month for month in datetime_val)
+    months.update((k, i + 1) for i, k in enumerate(months))
     month = []
     # record of current month
     curr_month = trunc_datetime_month(datetime.strptime(df['date'][0], "%Y-%m-%d %H:%M:%S"))

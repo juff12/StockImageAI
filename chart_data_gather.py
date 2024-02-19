@@ -86,8 +86,12 @@ def main():
         "TCOM", "TEAM", "TMUS", "TSLA", "TXN", "VRSK", "VRTX", "WBA", "WDAY", "XEL",
         "XLNX", "ZM"
     ]
+    
+    # yapi key
+    api_key = ""
+
     # connect to API
-    client = RESTClient(api_key="")
+    client = RESTClient(api_key=api_key)
 
     # presets
     start = '2018-01-01'
