@@ -5,11 +5,11 @@ import sys
 import time
 
 # interval of viewing the chart
-interval = {'day': 120, '4_hour': 120, '1_hour': 120}
+interval = {'1_day': 500, '4_hour': 500, '1_hour': 500}
 # amount to increment based on candel size
-increment = {'day': 10, '4_hour': 10, '1_hour': 40}
+increment = {'1_day': 10, '4_hour': 15, '1_hour': 30}
 # times the candle sticks can be
-bartimes = ['day','4_hour','1_hour','15_min'] 
+bartimes = ['1_day','4_hour','1_hour','15_min'] 
 
 def save_screenshot(image: list,filename: str, ticker: str, chart_type: str, bartime: str):
     filepath = Path('data/images/'+ticker+'/'+chart_type+'/'+bartime+'/'+filename+"_screenshot.png")
@@ -31,7 +31,10 @@ def screenshot_chart(ticker: str, bartime: str, chart_type: str):
         chart.crosshair('hidden')
         chart.grid(False,False)
         # set the first set on the chart
-        chart.set(df[col_labels].iloc[0:interval[bartime]])
+        chart.time_scale(min_bar_spacing=1.5) ####################
+        
+        chart.set(df[col_labels].iloc[0:interval[bartime]]) ####################
+        chart.fit() #############################
         chart.show()
         image = chart.screenshot()
         filename = (ticker + '_' + bartime + '_' + chart_type + '_' + bartime + 
@@ -53,11 +56,11 @@ def screenshot_chart(ticker: str, bartime: str, chart_type: str):
                 continue
             idx += 1
             count += 1
-            time.sleep(0.01)
-            
+            time.sleep(0.005)
+        chart.exit()
 # chart_types = ['candel','line']
 ticker = sys.argv[1]
 ticker = ticker.lower()
-screenshot_chart(ticker, 'day', 'candle')
+screenshot_chart(ticker, '1_day', 'candle')
 screenshot_chart(ticker, '4_hour', 'candle')
 screenshot_chart(ticker, '1_hour', 'candle')

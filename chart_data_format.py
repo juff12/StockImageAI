@@ -88,7 +88,7 @@ def format_data(ticker: str, time_interval: str):
         filepath.parent.mkdir(parents=True, exist_ok=True)
         df = pd.read_csv(filepath)
         # function to convert Unix msec timestamp to datetime (YYYY-MM-DD)
-        convert_date = lambda x: datetime.fromtimestamp(x / 1000.0).strftime('%Y-%m-%d')
+        convert_date = lambda x: datetime.fromtimestamp(x / 1000.0).strftime('%Y-%m-%d %H:%M:%S')
         df['date'] = df['timestamp'].apply(convert_date)
     except Exception:
         # skip, file formated wrong
@@ -103,10 +103,13 @@ def format_data(ticker: str, time_interval: str):
               datetime(2018,10,1): 10,datetime(2018,11,1): 11,datetime(2018,12,1): 12}
     month = []
     # record of current month
-    curr_month = trunc_datetime_month(datetime.strptime(df['date'][0], "%Y-%m-%d"))
+    curr_month = trunc_datetime_month(datetime.strptime(df['date'][0], "%Y-%m-%d %H:%M:%S"))
     # label of the current month    
     for date in df['date']:
-        date = trunc_datetime_month(datetime.strptime(date,'%Y-%m-%d'))
+        if time_interval == '1_hour' or time_interval == '4_hour':
+            date = trunc_datetime_month(datetime.strptime(date,'%Y-%m-%d %H:%M:%S'))
+        else:
+            date = trunc_datetime_month(datetime.strptime(date,'%Y-%m-%d %H:%M:%S'))
         if date == curr_month:
             curr_month = date
         month.append(months[date])
@@ -118,9 +121,5 @@ def format_data(ticker: str, time_interval: str):
 
 
 for ticker in sp500_tickers:
-    format_data(ticker.lower(),'day')
-    format_data(ticker.lower(),'1_hour')
-    format_data(ticker.lower(),'4_hour')
-    
     for time_interval in time_intervals:
         format_data(ticker.lower(), time_interval)
