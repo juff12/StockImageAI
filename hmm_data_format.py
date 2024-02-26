@@ -61,24 +61,14 @@ sp500_tickers = [
     "WU", "WRK", "WY", "WHR", "WMB", "WLTW", "WYNN", "XEL", "XLNX",
     "XYL", "YUM", "ZBRA", "ZBH", "ZION", "ZTS"
 ]
-nasdaq_100_tickers = [
-    "AAPL", "ADBE", "ADI", "ADP", "ADSK", "ALGN", "ALXN", "AMAT", "AMD", "AMGN",
-    "ANSS", "ASML", "ATVI", "AVGO", "BIDU", "BIIB", "BKNG", "BMRN", "CDNS", "CDW",
-    "CERN", "CHKP", "CHTR", "CMCSA", "COST", "CPRT", "CSCO", "CSX", "CTAS", "CTSH",
-    "CTXS", "DLTR", "DOCU", "DXCM", "EA", "EBAY", "EXC", "EXPE", "FAST", "FB",
-    "FISV", "FOX", "FOXA", "GILD", "GOOG", "GOOGL", "IDXX", "ILMN", "INCY", "INTC",
-    "INTU", "ISRG", "JD", "KDP", "KHC", "KLAC", "LRCX", "LULU", "LUMN", "LVGO",
-    "MAR", "MCHP", "MDLZ", "MELI", "MNST", "MRNA", "MSFT", "MU", "MXIM", "NFLX",
-    "NTAP", "NTES", "NVDA", "NXPI", "OKTA", "ORLY", "PAYX", "PCAR", "PDD", "PEP",
-    "PYPL", "QCOM", "REGN", "ROST", "SBUX", "SGEN", "SIRI", "SNPS", "SPLK", "SWKS",
-    "TCOM", "TEAM", "TMUS", "TSLA", "TXN", "VRSK", "VRTX", "WBA", "WDAY", "XEL",
-    "XLNX", "ZM"
-]
 time_intervals = ['1_day','4_hour','1_hour']
 
+def fractional_change(open, high, low, close):
+    fracChange = (close - open) / open
+    fracHigh = (high - open) / open
+    fracLow = (open - low) / open
+    return [fracChange, fracHigh, fracLow]
 
-def trunc_datetime_month(someDate):
-    return someDate.replace(year=2018, day=1, hour=0, minute=0, second=0, microsecond=0)
 
 def format_data(ticker: str, time_interval: str):
     # returns because there is an issue with the file
@@ -95,26 +85,21 @@ def format_data(ticker: str, time_interval: str):
         return
     # remove uncessary columns
     df = df[['date','open','high','low','close','volume']]
-
-    # dictionary of months for fast lookups
-    months = {datetime(2018,1,1): 1,datetime(2018,2,1): 2,datetime(2018,3,1): 3,
-              datetime(2018,4,1): 4,datetime(2018,5,1): 5,datetime(2018,6,1): 6,
-              datetime(2018,7,1): 7,datetime(2018,8,1): 8,datetime(2018,9,1): 9,
-              datetime(2018,10,1): 10,datetime(2018,11,1): 11,datetime(2018,12,1): 12}
-    month = []
-    # record of current month
-    curr_month = trunc_datetime_month(datetime.strptime(df['date'][0], "%Y-%m-%d"))
-    # label of the current month    
-    for date in df['date']:
-        date = trunc_datetime_month(datetime.strptime(date,'%Y-%m-%d'))
-        if date == curr_month:
-            curr_month = date
-        month.append(months[date])
-    df['month'] = month
+    # get new df
+    frac, fracHigh, fracLow = [], [], []
+    for i, row in df.iterrows():
+        temp = fractional_change(row['open'],row['high'],row['low'],row['close'])
+        frac.append(temp[0])
+        fracHigh.append(temp[1])
+        fracLow.append(temp[2])
+    df['frac'] = frac
+    df['fracHigh'] = fracHigh
+    df['fracLow'] = fracLow
     # out file path
-    filepath = Path('data/formatted/'+ticker+'/'+ticker+"_"+time_interval+"_data_formatted.csv")
+    filepath = Path('data/formatted/'+ticker+'/'+ticker+"_"+time_interval+"_data_hmm_formatted.csv")
     filepath.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(filepath)
+
 
 def main():
     for ticker in sp500_tickers:
