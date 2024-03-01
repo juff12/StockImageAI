@@ -1,6 +1,7 @@
 """
 Usage: analyse_data.py --company=<company>
 """
+import pickle
 import warnings
 import logging
 import itertools
@@ -73,8 +74,12 @@ class StockPredictor(object):
         self._logger.info('>>> Extracting Features')
         feature_vector = StockPredictor._extract_features(self._train_data)
         self._logger.info('Features extraction Completed <<<')
- 
+        
         self.hmm.fit(feature_vector)
+        
+        # save the model
+        with open("model_{company}.pkl".format(company=self.company), "wb") as file: 
+            pickle.dump(self.hmm, file)
  
     def _compute_all_possible_outcomes(self, n_steps_frac_change,
                                        n_steps_frac_high, n_steps_frac_low):
@@ -151,7 +156,11 @@ class StockPredictor(object):
         return round(mape, 2)
 
 
-
-stock_predictor = StockPredictor(('aapl','1_day'))
-stock_predictor.fit()
-stock_predictor.predict_close_prices_for_days(10, with_plot=True)
+def main():
+    stock_predictor = StockPredictor(('aapl','1_day'))
+    stock_predictor.fit()
+    # predicts the maximum number of days
+    stock_predictor.predict_close_prices_for_days(500, with_plot=True)
+    
+if __name__ == '__main__':
+    main()
