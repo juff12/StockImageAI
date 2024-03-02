@@ -60,7 +60,7 @@ def screenshot_chart(ticker: str, bartime: str, chart_type: str):
             continue
         idx += 1
         count += 1
-        time.sleep(0.005)
+        #time.sleep(0.005)
     chart.exit()
 
 # main code of script

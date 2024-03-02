@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
+from tqdm import tqdm
 
 def main():
     sp500_tickers = [
         "mmm", "abt", "abbv", "acn", "atvi", "adbe", "amd", "aes", "afl", "a",
-        "apd", "akam", "alk", "alb", "are", "algn", "alle", "lnt", "all", "googl",
+        "akam", "alk", "alb", "are", "algn", "alle", "lnt", "all", "googl",
         "goog", "mo", "amzn", "amcr", "aee", "aal", "aep", "axp", "aig",
         "amt", "awk", "amp", "abc", "ame", "amgn", "aph", "adi", "antm",
         "aon", "aos", "apa", "aapl", "amat", "aptv", "adm", "anet", "ajg",
@@ -75,7 +76,7 @@ def main():
     ]
     python_path = str(Path.cwd()).replace('repos\StockImageAI','') + '\\anaconda3\python.exe '
     script_path = str(Path.cwd()) + '\chart_image_create.py '
-    for ticker in sp500_tickers:
+    for ticker in tqdm(sp500_tickers, desc='Stocks: '):
         ticker = ticker.lower()
         path = python_path + script_path + ticker
         os.system(path)

@@ -1,7 +1,7 @@
 """
 Usage: analyse_data.py --company=<company>
 """
-from numba import jit, cuda
+
 import pickle
 import warnings
 import logging
@@ -14,6 +14,7 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from pathlib import Path
 import os
+from timeit import default_timer as timer
 
 # Supress warning in hmmlearn
 warnings.filterwarnings("ignore")
@@ -33,13 +34,13 @@ class StockPredictor(object):
 
         self.n_latency_days = n_latency_days
  
-        self.hmm = GaussianHMM(n_components=n_hidden_states)
-        #self.hmm = GMMHMM(n_components=n_hidden_states, n_mix=5)
+        #self.hmm = GaussianHMM(n_components=n_hidden_states)
+        self.hmm = GMMHMM(n_components=n_hidden_states, n_mix=5)
         self._split_train_test_data(test_size)
  
         self._compute_all_possible_outcomes(
             n_steps_frac_change, n_steps_frac_high, n_steps_frac_low)
- 
+    
     def _init_logger(self):
         self._logger = logging.getLogger(__name__)
         handler = logging.StreamHandler()
@@ -58,7 +59,6 @@ class StockPredictor(object):
         self._test_data = test_data
  
     @staticmethod
-    @jit(target_backend='cuda')
     def _extract_features(data):
         open = np.array(data['open'])
         close = np.array(data['close'])
@@ -72,7 +72,7 @@ class StockPredictor(object):
         frac_low = (open - low) / open
  
         return np.column_stack((frac_change, frac_high, frac_low))
- 
+    
     def fit(self):
         self._logger.info('>>> Extracting Features')
         feature_vector = StockPredictor._extract_features(self._train_data)
@@ -85,7 +85,8 @@ class StockPredictor(object):
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(filepath, "wb") as file: 
             pickle.dump(self.hmm, file)
- 
+    
+    
     def _compute_all_possible_outcomes(self, n_steps_frac_change,
                                        n_steps_frac_high, n_steps_frac_low):
         frac_change_range = np.linspace(-0.1, 0.1, n_steps_frac_change)
@@ -94,7 +95,8 @@ class StockPredictor(object):
  
         self._possible_outcomes = np.array(list(itertools.product(
             frac_change_range, frac_high_range, frac_low_range)))
-    @jit(target_backend='cuda')
+    
+
     def _get_most_probable_outcome(self, day_index):
         previous_data_start_index = max(0, day_index - self.n_latency_days)
         previous_data_end_index = max(0, day_index - 1)
@@ -108,15 +110,15 @@ class StockPredictor(object):
         most_probable_outcome = self._possible_outcomes[np.argmax(outcome_score)]
  
         return most_probable_outcome
-    @jit(target_backend='cuda')
+
     def predict_close_price(self, day_index):
         open_price = self._test_data.iloc[day_index]['open']
-        predicted_frac_change, _, _ = self._get_most_probable_outcome(
-            day_index)
+        predicted_frac_change, _, _ = self._get_most_probable_outcome(day_index)
+        
         return open_price * (1 + predicted_frac_change)
 
-    @jit(target_backend='cuda')
     def predict_close_prices_for_days(self, days, with_plot=False):
+        start = timer()
         if days > len(self._test_data):
             days = len(self._test_data)
         self._logger.info('>>> Begining Prediction Generation')
@@ -130,7 +132,8 @@ class StockPredictor(object):
         self.pred_save(predicted_close_prices, test_data)
 
         mape = self.compute_mape(days, predicted_close_prices, actual_close_prices.values)
-
+        self._logger.info(timer() - start)
+        
         if with_plot:
             days = np.array(test_data['date'], dtype="datetime64[ms]")
 
@@ -148,19 +151,23 @@ class StockPredictor(object):
             filepath = Path('data/HMM_charts/{c}/{c}_{b}_chart.png'.format(c=self.company,b=self.bartime))
             filepath.parent.mkdir(parents=True, exist_ok=True)
             plt.savefig(filepath)
+            
         return mape
-    @jit(target_backend='cuda')
+    
     def compute_mape(self, days, predicted_close_prices, actual_close_prices):
         if days > len(self._test_data):
             days = len(self._test_data)
+        
         mape = []
+        
         for day in range(0,days):
             p, y = predicted_close_prices[day], actual_close_prices[day]
             diff_percent = (abs(p - y) / abs(y)) * 100
             mape.append(diff_percent)
         mape = sum(mape) / days
+        
         return round(mape, 2)
-    @jit(target_backend='cuda')
+    
     def pred_save(self, predictions, df):
         df = df[['date','close']]
         df.loc[:,'predicted'] = [round(pred, 2) for pred in predictions]
@@ -171,9 +178,9 @@ class StockPredictor(object):
 def main():
     sp500_tickers = [
         "mmm", "abt", "abbv", "acn", "atvi", "adbe", "amd", "aes", "afl", "a",
-        "apd", "akam", "alk", "alb", "are", "algn", "alle", "lnt", "all", "googl",
+        "akam", "alk", "alb", "are", "algn", "alle", "lnt", "all", "googl",
         "goog", "mo", "amzn", "amcr", "aee", "aal", "aep", "axp", "aig",
-        "amt", "awk", "amp", "abc", "ame", "amgn", "aph", "adi", "ansys", "antm",
+        "amt", "awk", "amp", "abc", "ame", "amgn", "aph", "adi", "antm",
         "aon", "aos", "apa", "aapl", "amat", "aptv", "adm", "anet", "ajg",
         "aiz", "t", "ato", "adsk", "adp", "azo", "avb", "avy", "bkr",
         "bll", "bac", "bk", "bax", "bdx", "brk.b", "bby", "bio", "biib",
@@ -228,7 +235,7 @@ def main():
         "xyl", "yum", "zbra", "zbh", "zion", "zts"
     ]
     time_intervals = ['1_day','4_hour','1_hour']
-    sp500_tickers = ['aapl', 'msft', 'fb']
+    #sp500_tickers = ['aapl', 'nflx', 'tsla']
     mapes = []
     # crate model for each stock in S&P500
     for ticker in sp500_tickers:
@@ -240,14 +247,14 @@ def main():
             stock_predictor.fit()
             # set to 10_000 to predict maximum amount of points
             # set to 252 to predict 1 year of trading data for 1_day
-            mape = stock_predictor.predict_close_prices_for_days(252, with_plot=True)
-            ticker_mape.append(mape)
-        mapes.append(ticker_mape) # add all mapes for stock    
+            #mape = stock_predictor.predict_close_prices_for_days(252, with_plot=True)
+            #ticker_mape.append(mape)
+        #mapes.append(ticker_mape) # add all mapes for stock    
     # save mapes
-    df_mape = pd.DataFrame(mapes, columns=['stock','1_day','4_hour','1_hour'])
-    filepath = Path('data/mapes/sp500_mapes.csv')
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-    df_mape.to_csv(filepath,index=False)
+    #df_mape = pd.DataFrame(mapes, columns=['stock','1_day','4_hour','1_hour'])
+    #filepath = Path('data/mapes/sp500_mapes.csv')
+    #filepath.parent.mkdir(parents=True, exist_ok=True)
+    #df_mape.to_csv(filepath,index=False)
     
 if __name__=='__main__':
     main()
