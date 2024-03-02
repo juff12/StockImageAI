@@ -69,8 +69,8 @@ def main():
     ticker = sys.argv[1]
     ticker = ticker.lower()
     screenshot_chart(ticker, '1_day', 'candle')
-    screenshot_chart(ticker, '4_hour', 'candle')
-    screenshot_chart(ticker, '1_hour', 'candle')
+    #screenshot_chart(ticker, '4_hour', 'candle')
+    #screenshot_chart(ticker, '1_hour', 'candle')
 
 # run script
 if __name__ == '__main__':
