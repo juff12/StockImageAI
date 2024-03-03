@@ -70,8 +70,7 @@ def reformat_pred(df_pred, df_orig):
     df_orig.set_index('date', inplace=True) # allows for date indexing
     df_out = df_orig[['open','high','low','close','volume']].loc[dates]
     df_out.insert(4, 'pred close', df_pred['predicted'].values)
-    return df_orig
-    
+    return df_out
     
 # add the high, low, open to the predicted datasets
 for ticker in sp500_tickers:
@@ -82,5 +81,4 @@ for ticker in sp500_tickers:
         filepath = Path('data/predicted/{t}/{t}_{b}_pred_formatted.csv'.format(t=ticker,b=bartime))
         filepath.parent.mkdir(parents=True, exist_ok=True)
         df_pred.to_csv('data/predicted/{t}/{t}_{b}_pred_formatted.csv'.format(t=ticker,b=bartime))
-
         

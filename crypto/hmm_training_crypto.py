@@ -1,6 +1,11 @@
-"""
-Usage: analyse_data.py --company=<company>
-"""
+#########
+# TO DO:
+# - get 4hr and 1hr data
+# - split crypto data into markets (asia, EU, US)
+# - remove weekend data
+#      - movement on weekends vs week
+#      - weekend reversal
+# - gap filling
 
 import pickle
 import warnings

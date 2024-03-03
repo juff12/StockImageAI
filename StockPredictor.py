@@ -1,7 +1,3 @@
-"""
-Usage: analyse_data.py --company=<company>
-"""
-
 import pickle
 import warnings
 import logging
@@ -13,8 +9,8 @@ from hmmlearn.hmm import GaussianHMM, GMMHMM
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from pathlib import Path
-import os
 from timeit import default_timer as timer
+import sys
 
 # Supress warning in hmmlearn
 warnings.filterwarnings("ignore")
@@ -22,8 +18,8 @@ warnings.filterwarnings("ignore")
 plt.style.use('ggplot')
 
 class StockPredictor(object):
-    def __init__(self, company, multimodal=False, test_size=0.33,
-                 n_hidden_states=4, n_latency_days=10,
+    def __init__(self, company, load_model=False, model_type='gaussian',
+                 test_size=0.33, n_hidden_states=4, n_latency_days=10,
                  n_steps_frac_change=50, n_steps_frac_high=10,
                  n_steps_frac_low=10, n_mix=5):
         self._init_logger()
@@ -31,16 +27,23 @@ class StockPredictor(object):
         self.bar_format ='{l_bar}{bar:10}{r_bar}{bar:-10b}'
         self.company = company[0]
         self.bartime = company[1]
-
+        
+        # sets default test size
+        self.test_size = test_size
+        
         self.n_latency_days = n_latency_days
+
+        # set the model type name
+        self.model_type = model_type
         
-        if multimodal is True:
-            self.hmm = GMMHMM(n_components=n_hidden_states, n_mix=n_mix)
+        if load_model is True:
+            self.load_model()
         else:
-            self.hmm = GaussianHMM(n_components=n_hidden_states)
+            if self.model_type == 'gmmhmm':
+                self.hmm = GMMHMM(n_components=n_hidden_states, n_mix=n_mix)
+            else:
+                self.hmm = GaussianHMM(n_components=n_hidden_states)
         
-        self._split_train_test_data(test_size)
- 
         self._compute_all_possible_outcomes(
             n_steps_frac_change, n_steps_frac_high, n_steps_frac_low)
     
@@ -52,6 +55,18 @@ class StockPredictor(object):
         handler.setFormatter(formatter)
         self._logger.addHandler(handler)
         self._logger.setLevel(logging.DEBUG)
+
+    def load_model(self):
+        self._logger.info('>>> Loading the model')
+        filepath = Path('models/{m}/{t}/model_{t}_{b}.pkl'.format(m=self.model_type,
+                                                                  t=self.company,
+                                                                  b=self.bartime))
+        try:
+            self.hmm = pickle.load(open(filepath),'rb')
+        except:
+            self._logger.error('The model could not be loaded')
+            sys.exit()
+        self._logger.info('>>> Model Loaded')
 
     def _split_train_test_data(self, test_size):
         data = pd.read_csv(
@@ -77,6 +92,7 @@ class StockPredictor(object):
         return np.column_stack((frac_change, frac_high, frac_low))
     
     def fit(self):
+        self._split_train_test_data(self.test_size)
         self._logger.info('>>> Extracting Features')
         feature_vector = StockPredictor._extract_features(self._train_data)
         self._logger.info('Features extraction Completed <<<')
@@ -84,9 +100,9 @@ class StockPredictor(object):
         self.hmm.fit(feature_vector)
         
         # save the model
-        filepath = Path("models/{c}/model_{c}_{b}.pkl".format(c=self.company,b=self.bartime))
+        filepath = Path("models/model/{c}/model_{c}_{b}.pkl".format(c=self.company,b=self.bartime))
         filepath.parent.mkdir(parents=True, exist_ok=True)
-        with open(filepath, "wb") as file: 
+        with open(filepath, "wb") as file:
             pickle.dump(self.hmm, file)
     
     
@@ -177,90 +193,3 @@ class StockPredictor(object):
         filepath = Path(f"data/predicted/{self.company}/{self.company}_{self.bartime}_pred.csv")
         filepath.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(filepath, index=False)
-    
-def main():
-    sp500_tickers = [
-        # "mmm", "abt", "abbv", "acn", "atvi", "adbe", "amd", "aes", "afl", "a",
-        # "akam", "alk", "alb", "are", "algn", "alle", "lnt", "all", "googl",
-        # "goog", "mo", "amzn", "amcr", "aee", "aal", "aep", "axp", "aig",
-        # "amt", "awk", "amp", "abc", "ame", "amgn", "aph", "adi", "antm",
-        # "aon", "aos", "apa", "aapl", "amat", "aptv", "adm", "anet", "ajg",
-        # "aiz", "t", "ato", "adsk", "adp", "azo", "avb", "avy", "bkr",
-        # "bll", "bac", "bk", "bax", "bdx", "brk.b", "bby", "bio", "biib",
-        # "blk", "ba", "bkng", "bwa", "bxp", "bsx", "bmy", "avgo", "br",
-        # "bf.b", "chrw", "cog", "cdns", "czr", "cpb", "cof", "cah", "kmx",
-        # "ccl", "carr", "ctlt", "cat", "cboe", "cbre", "cdw", "ce", "cnc",
-        # "cnp", "cern", "cf", "crl", "schw", "chtr", "cvx", "cmg", "cb",
-        # "chd", "ci", "cinf", "ctas", "csco", "c", "cfg", "ctxs", "clx",
-        # "cme", "cms", "ko", "ctsh", "cl", "cmcsa", "cma", "cag", "cop",
-        # "ed", "stz", "coo", "cprt", "glw", "ctva", "cost", "cci", "csx",
-        # "cmi", "cvs", "dhi", "dhr", "dri", "dva", "de", "dal", "xray"]#,
-        # "dvn", "dxcm", "fang", "dlr", "dfs", "disca", "disck", "dish", "dg",
-        # "dltr", "d", "dpz", "dov", "dow", "dte", "duk", "dre", "dd",
-        # "dxc", "emn", "etn", "ebay", "ecl", "eix", "ew", "ea", "emr",
-        # "enph", "etr", "eog", "efx", "eqix", "eqr", "ess", "el", "etsy",
-        # "evrg", "es", "re", "exc", "expe", "expd", "exr", "xom", "ffiv",
-        # "fb", "fast", "frt", "fdx", "fis", "fitb", "fe", "frc", "fisv",
-        # "flt", "flir", "fls", "fmc", "f", "ftnt", "ftv", "fbhs", "foxa",
-        # "fox", "ben", "fcx", "gps", "grmn", "it", "gnrc", "gd", "ge",
-        # "gis", "gm", "gpc", "gild", "gl", "gpn", "gs", "gww", "hal",
-        # "hbi", "hig", "has", "hca", "peak", "hsic", "hsy", "hes", "hpe",
-        # "hlt", "hfc", "holx", "hd", "hon", "hrl", "hst", "hwm", "hpq",
-        # "hum", "hban", "hii", "iex", "idxx", "info", "itw", "ilmn", "incy",
-        # "ir", "intc", "ice", "ibm", "ip", "ipg", "iff", "intu", "isrg",
-        # "ivz", "ipgp", "iqv", "irm", "jkhy", "j", "jbht", "sjm", "jnj",
-        # "jci", "jpm", "jnpr", "ksu", "k", "key", "keys", "kmb", "kim",
-        # "kmi", "klac", "khc", "kr", "lb", "lhx", "lh", "lrcx", "lw",
-        # "lvs", "leg", "ldos", "len", "lly", "lnc", "lin", "lyv", "lkq",
-        # "lmt", "l", "low", "lumn", "lyb", "mtb", "mro", "mpc", "mktx",
-        # "mar", "mmc", "mlm", "mas", "ma", "mkc", "mxim", "mcd", "mck",
-        # "mdt", "mrk", "met", "mtd", "mgm", "mchp", "mu", "msft", "maa",
-        # "mhk", "tap", "mdlz", "mpwr", "mnst", "mco", "ms", "mos", "msi",
-        # "msci", "ndaq", "ntap", "nflx", "nwl", "nem", "nwsa", "nws", "nee",
-        # "nlsn", "nke", "ni", "nsc", "ntrs", "noc", "nlok", "nclh", "nov",
-        # "nrg", "nue", "nvda", "nvr", "nxpi", "orly", "oxy", "odfl", "omc",
-        # "oke", "orcl", "otis", "pcar", "pkg", "ph", "payx", "payc", "pypl",
-        # "penn", "pnr", "pbct", "pep", "pki", "prgo", "pfe", "pm", "psx",
-        # "pnw", "pxd", "pnc", "pool", "ppg", "ppl", "pfg", "pg", "pgr",
-        # "pld", "pru", "ptc", "peg", "psa", "phm", "pvh", "qrvo", "pwr",
-        # "qcom", "dgx", "rl", "rjf", "rtx", "o", "reg", "regn", "rf",
-        # "rsg", "rmd", "rhi", "rok", "rol", "rop", "rost", "rcl", "spgi",
-        # "crm", "sbac", "slb", "stx", "see", "sre", "now", "shw", "spg"]#,
-        "swks", "sna", "so", "luv", "swk", "sbux", "stt", "ste", "syk",
-        "sivb", "syf", "snps", "syy", "tmus", "trow", "ttwo", "tpr", "tgt",
-        "tel", "tdy", "tfx", "ter", "tsla", "txn", "txt", "tmo", "tjx",
-        "tsco", "tt", "tdg", "trv", "tfc", "twtr", "tyl", "tsn", "udr",
-        "ulta", "usb", "uaa", "ua", "unp", "ual", "unh", "ups", "uri",
-        "uhs", "unm", "vlo", "vtr", "vrsn", "vrsk", "vz", "vrtx", "vfc",
-        "viac", "vtrs", "v", "vnt", "vno", "vmc", "wrb", "wab", "wmt",
-        "wba", "dis", "wm", "wat", "wec", "wfc", "well", "wst", "wdc",
-        "wu", "wrk", "wy", "whr", "wmb", "wltw", "wynn", "xel", "xlnx",
-        "xyl", "yum", "zbra", "zbh", "zion", "zts"
-    ]
-    time_intervals = ['1_day','4_hour','1_hour']
-
-    mapes = []
-    # crate model for each stock in S&P500
-    for ticker in sp500_tickers:
-        ticker_mape = [ticker]
-        for bartime in time_intervals:
-            if os.path.isfile('data/formatted/{t}/{t}_{b}_data_formatted.csv'.format(t=ticker,b=bartime)) is False:
-                continue # skip bad files
-            stock_predictor = StockPredictor((ticker,bartime))
-            stock_predictor.fit()
-            # set to 10_000 to predict maximum amount of points
-            # set to 252 to predict 1 year of trading data for 1_day
-            mape = stock_predictor.predict_close_prices_for_days(252, with_plot=True)
-            ticker_mape.append(mape)
-        mapes.append(ticker_mape) # add all mapes for stock
-        # periodically save the mape in case of crash when iterating over data
-        with open('mapes4.pkl', "wb") as file: 
-            pickle.dump(mapes, file)
-    # save mapes
-    df_mape = pd.DataFrame(mapes, columns=['stock','1_day','4_hour','1_hour'])
-    filepath = Path('data/mapes/sp500_mapes.csv')
-    filepath.parent.mkdir(parents=True, exist_ok=True)
-    df_mape.to_csv(filepath,index=False)
-    
-if __name__=='__main__':
-    main()
