@@ -23,8 +23,6 @@ def save_screenshot(image: list,filename: str, ticker: str, chart_type: str, bar
         out.write(image)
 
 def screenshot_chart(ticker: str, bartime: str, chart_type: str):    
-    # sets ticker to lower case
-    ticker = ticker.lower()
     col_labels = ['date','open','high','low','close','volume']
     # Columns: time | open | high | low | close | volume
     try:
@@ -67,9 +65,8 @@ def screenshot_chart(ticker: str, bartime: str, chart_type: str):
 def main():
     # chart_types = ['candel','line']
     ticker = sys.argv[1]
-    ticker = ticker.lower()
-    screenshot_chart(ticker, '1_day', 'candle')
-    #screenshot_chart(ticker, '4_hour', 'candle')
+    #screenshot_chart(ticker, '1_day', 'candle')
+    screenshot_chart(ticker, '4_hour', 'candle')
     #screenshot_chart(ticker, '1_hour', 'candle')
 
 # run script
