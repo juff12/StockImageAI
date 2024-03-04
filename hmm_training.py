@@ -84,7 +84,7 @@ class StockPredictor(object):
         self.hmm.fit(feature_vector)
         
         # save the model
-        filepath = Path("models/{c}/model_{c}_{b}.pkl".format(c=self.company,b=self.bartime))
+        filepath = Path("models/model/{c}/model_{c}_{b}.pkl".format(c=self.company,b=self.bartime))
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(filepath, "wb") as file: 
             pickle.dump(self.hmm, file)
@@ -172,8 +172,8 @@ class StockPredictor(object):
         return round(mape, 2)
     
     def pred_save(self, predictions, df):
-        df = df[['date','open','high','low','close']]
-        df.loc[:,'pred close'] = [round(pred, 2) for pred in predictions]
+        df = df[['date','open','high','low','close','volume']]
+        df.insert(4, 'pred', [round(pred, 2) for pred in predictions])
         filepath = Path(f"data/predicted/{self.company}/{self.company}_{self.bartime}_pred.csv")
         filepath.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(filepath, index=False)
@@ -203,7 +203,7 @@ def main():
         with open('data/mapes/mapes_temp.pkl', "wb") as file: 
             pickle.dump(mapes, file)
     # save mapes
-    df_mape = pd.DataFrame(mapes, columns=['stock','1_day','4_hour','1_hour'])
+    df_mape = pd.DataFrame(mapes, columns=['ticker','1_day','4_hour','1_hour'])
     filepath = Path('data/mapes/sp500_mapes.csv')
     filepath.parent.mkdir(parents=True, exist_ok=True)
     df_mape.to_csv(filepath,index=False)

@@ -28,9 +28,9 @@ def main():
             df_pred = pd.read_csv('data/predicted/{t}/{t}_{b}_pred.csv'.format(t=ticker,b=bartime))
             df_orig = pd.read_csv('data/formatted/{t}/{t}_{b}_data_formatted.csv'.format(t=ticker,b=bartime))
             df_pred = reformat_pred(df_pred,df_orig)
-            filepath = Path('data/predicted/{t}/{t}_{b}_pred_formatted.csv'.format(t=ticker,b=bartime))
+            filepath = Path('data/predicted/{t}/{t}_{b}_pred.csv'.format(t=ticker,b=bartime))
             filepath.parent.mkdir(parents=True, exist_ok=True)
-            df_pred.to_csv('data/predicted/{t}/{t}_{b}_pred_formatted.csv'.format(t=ticker,b=bartime))
+            df_pred.to_csv(filepath)
 
 if __name__ == '__main__':
     main()

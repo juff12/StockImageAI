@@ -11,6 +11,8 @@ from tqdm import tqdm
 from pathlib import Path
 from timeit import default_timer as timer
 import sys
+from datetime import date, datetime, timedelta
+import yfinance as yf
 
 # Supress warning in hmmlearn
 warnings.filterwarnings("ignore")
@@ -18,25 +20,22 @@ warnings.filterwarnings("ignore")
 plt.style.use('ggplot')
 
 class StockPredictor(object):
-    def __init__(self, company, load_model=False, model_type='gaussian',
-                 test_size=0.33, n_hidden_states=4, n_latency_days=10,
+    def __init__(self, ticker, bartime, load_model=False, model_type='gaussian',
+                 n_hidden_states=4, n_latency_days=10,
                  n_steps_frac_change=50, n_steps_frac_high=10,
                  n_steps_frac_low=10, n_mix=5):
         self._init_logger()
         # set tqdm barformat
         self.bar_format ='{l_bar}{bar:10}{r_bar}{bar:-10b}'
-        self.company = company[0]
-        self.bartime = company[1]
-        
-        # sets default test size
-        self.test_size = test_size
+        self.ticker = ticker
+        self.bartime = bartime
         
         self.n_latency_days = n_latency_days
 
         # set the model type name
         self.model_type = model_type
-        
-        if load_model is True:
+
+        if load_model:
             self.load_model()
         else:
             if self.model_type == 'gmmhmm':
@@ -56,21 +55,24 @@ class StockPredictor(object):
         self._logger.addHandler(handler)
         self._logger.setLevel(logging.DEBUG)
 
-    def load_model(self):
+    def load_test(self, test_data):
+        self._logger.info('>>> Loading the test data')
+        self._test_data=test_data
+        self._logger.info('>>> Test data loaded')
+        
+    def load_model(self, filepath=None):
         self._logger.info('>>> Loading the model')
-        filepath = Path('models/{m}/{t}/model_{t}_{b}.pkl'.format(m=self.model_type,
-                                                                  t=self.company,
-                                                                  b=self.bartime))
+        if filepath is None:
+            filepath = Path('models/{m}/{t}/model_{t}_{b}.pkl'.format(m=self.model_type,
+                                                                      t=self.ticker,
+                                                                      b=self.bartime))
         try:
-            self.hmm = pickle.load(open(filepath),'rb')
+            self.hmm = pickle.load(open(filepath, 'rb'))
+            self._logger.info('>>> Model Loaded')
         except:
             self._logger.error('The model could not be loaded')
-            sys.exit()
-        self._logger.info('>>> Model Loaded')
 
-    def _split_train_test_data(self, test_size):
-        data = pd.read_csv(
-            'data/formatted/{c}/{c}_{b}_data_formatted.csv'.format(c=self.company,b=self.bartime))
+    def _split_train_test_data(self, data, test_size):
         _train_data, test_data = train_test_split(data, test_size=test_size, shuffle=False)
  
         self._train_data = _train_data
@@ -91,16 +93,18 @@ class StockPredictor(object):
  
         return np.column_stack((frac_change, frac_high, frac_low))
     
-    def fit(self):
-        self._split_train_test_data(self.test_size)
+    def fit(self, data, test_size=0.33):
+        self._split_train_test_data(data, test_size)
         self._logger.info('>>> Extracting Features')
         feature_vector = StockPredictor._extract_features(self._train_data)
         self._logger.info('Features extraction Completed <<<')
         
         self.hmm.fit(feature_vector)
         
+    def save_model(self, filepath=None):
         # save the model
-        filepath = Path("models/model/{c}/model_{c}_{b}.pkl".format(c=self.company,b=self.bartime))
+        if filepath is None:
+            filepath = Path("models/model/{t}/model_{t}_{b}.pkl".format(t=self.ticker,b=self.bartime))
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(filepath, "wb") as file:
             pickle.dump(self.hmm, file)
@@ -115,7 +119,6 @@ class StockPredictor(object):
         self._possible_outcomes = np.array(list(itertools.product(
             frac_change_range, frac_high_range, frac_low_range)))
     
-
     def _get_most_probable_outcome(self, day_index):
         previous_data_start_index = max(0, day_index - self.n_latency_days)
         previous_data_end_index = max(0, day_index - 1)
@@ -132,14 +135,19 @@ class StockPredictor(object):
 
     def predict_close_price(self, day_index):
         open_price = self._test_data.iloc[day_index]['open']
+        print(open_price)
         predicted_frac_change, _, _ = self._get_most_probable_outcome(day_index)
         
         return open_price * (1 + predicted_frac_change)
 
-    def predict_close_prices_for_days(self, days, with_plot=False):
-        start = timer()
+    def predict_close_prices_for_days(self, days, with_plot=False, save_preds=False, save_plot=False):
+        if self._test_data is None:
+            self._logger.error('No test data has been loaded')
+            return None
+
         if days > len(self._test_data):
             days = len(self._test_data)
+        
         self._logger.info('>>> Begining Prediction Generation')
         predicted_close_prices = []
         for day_index in tqdm(range(days),bar_format=self.bar_format,desc='Predictions'):
@@ -148,10 +156,10 @@ class StockPredictor(object):
         
         test_data = self._test_data[0: days]
         actual_close_prices = test_data['close']
-        self.pred_save(predicted_close_prices, test_data)
+        if save_preds:
+            self.pred_save(predicted_close_prices, test_data)
 
         mape = self.compute_mape(days, predicted_close_prices, actual_close_prices.values)
-        self._logger.info(timer() - start)
         
         if with_plot:
             days = np.array(test_data['date'], dtype="datetime64[ms]")
@@ -161,16 +169,18 @@ class StockPredictor(object):
             axes = fig.add_subplot(111)
             axes.plot(days, actual_close_prices, 'bo-', markersize=3, label="actual")
             axes.plot(days, predicted_close_prices, 'ro-',markersize=3, label="predicted")
-            axes.set_title(f'{self.company.upper()} - Predicted vs Actual Prices ({self.bartime})')
+            axes.set_title(f'{self.ticker.upper()} - Predicted vs Actual Prices ({self.bartime})')
             axes.set_xlabel('Date')
             axes.set_ylabel('Stock Value (US Dollars)')
             fig.autofmt_xdate()
 
             plt.legend()
-            filepath = Path('data/HMM_charts/{c}/{c}_{b}_chart.png'.format(c=self.company,b=self.bartime))
-            filepath.parent.mkdir(parents=True, exist_ok=True)
-            plt.savefig(filepath)
-            
+            if save_plot:
+                filepath = Path('data/HMM_charts/{t}/{t}_{b}_chart.png'.format(c=self.ticker,b=self.bartime))
+                filepath.parent.mkdir(parents=True, exist_ok=True)
+                plt.savefig(filepath)
+            else:
+                plt.show()
         return mape
     
     def compute_mape(self, days, predicted_close_prices, actual_close_prices):
@@ -190,6 +200,21 @@ class StockPredictor(object):
     def pred_save(self, predictions, df):
         df = df[['date','open','high','low','close']]
         df.loc[:,'pred close'] = [round(pred, 2) for pred in predictions]
-        filepath = Path(f"data/predicted/{self.company}/{self.company}_{self.bartime}_pred.csv")
+        filepath = Path(f"data/predicted/{self.ticker}/{self.ticker}_{self.bartime}_pred.csv")
         filepath.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(filepath, index=False)
+
+    def predict_next_timeframe_price(self):
+        # get todays open
+        open_price = float(yf.Ticker(self.ticker).info['open'])
+        # get start and end
+        start = datetime.now() - timedelta(60)
+        start = start.strftime('%Y-%m-%d')
+        end = date.today().strftime('%Y-%m-%d')
+
+        # get date for past 60 days
+        data = yf.download(self.ticker, start=start, end=end)
+        data.loc[date.today()] = [open_price, 0, 0, 0, 0, 0]
+        data.columns = map(str.lower, data.columns)
+        self._test_data = data
+        return self.predict_close_price(len(self._test_data) - 1)

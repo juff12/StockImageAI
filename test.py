@@ -2,37 +2,15 @@ from hmm_training import StockPredictor
 import pickle
 from pathlib import Path
 import pandas as pd
+import glob
+import os
 
-data = pickle.load(open('mapes.pkl', 'rb'))
-# data1 = pickle.load(open('mapes1.pkl', 'rb'))
-# data2 = pickle.load(open('mapes2.pkl', 'rb'))
-# data3 = pickle.load(open('mapes3.pkl', 'rb'))
-# data4 = pickle.load(open('mapes4.pkl', 'rb'))
+# read in the iterables
+sp500_tickers = pickle.load(open('iterables/sp500_tickers.pkl', 'rb'))
+nasdaq_100_tickers = pickle.load(open('iterables/nasdaq_100_tickers.pkl', 'rb'))
+time_intervals = pickle.load(open('iterables/time_intervals.pkl', 'rb'))
 
-#print(data4)
-
-
-#mapes = [data1,data2,data3,data4]
-
-print(len(data))
-
-# for arr in mapes:
-#     for elem in arr:
-#         if elem in data:
-#             continue
-#         data.append(elem)
-
-# with open('mapes.pkl', 'wb') as file:
-#     pickle.dump(data, file)
-
-df_mape = pd.DataFrame(data, columns=['ticker','1_day','4_hour','1_hour'])
-filepath = Path('data/mapes/sp500_mapes.csv')
-filepath.parent.mkdir(parents=True, exist_ok=True)
-df_mape.to_csv(filepath,index=False)
-
-
-# stockpred = StockPredictor(('zts', '1_day'), multimodal=False)
-# stockpred.fit()
-# mape = stockpred.predict_close_prices_for_days(252, with_plot=True)
-# print(mape)
-
+for ticker in sp500_tickers:
+    for bartime in time_intervals:
+        for filename in glob.iglob('data/predicted/{t}/{t}_{b}_pred_formatted.csv'.format(t=ticker,b=bartime)):
+            os.remove(filename)
