@@ -105,6 +105,7 @@ class StockPredictor(object):
         # save the model
         if filepath is None:
             filepath = Path("models/model/{t}/model_{t}_{b}.pkl".format(t=self.ticker,b=self.bartime))
+        filepath = Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(filepath, "wb") as file:
             pickle.dump(self.hmm, file)
@@ -135,12 +136,11 @@ class StockPredictor(object):
 
     def predict_close_price(self, day_index):
         open_price = self._test_data.iloc[day_index]['open']
-        print(open_price)
         predicted_frac_change, _, _ = self._get_most_probable_outcome(day_index)
         
         return open_price * (1 + predicted_frac_change)
 
-    def predict_close_prices_for_days(self, days, with_plot=False, save_preds=False, save_plot=False):
+    def predict_close_prices_for_days(self, days, with_plot=False, save_plot=False):
         if self._test_data is None:
             self._logger.error('No test data has been loaded')
             return None
@@ -156,16 +156,17 @@ class StockPredictor(object):
         
         test_data = self._test_data[0: days]
         actual_close_prices = test_data['close']
-        if save_preds:
-            self.pred_save(predicted_close_prices, test_data)
-
+        
+        self.predictions = predicted_close_prices
+        self.actual_close_data = test_data
+        
         mape = self.compute_mape(days, predicted_close_prices, actual_close_prices.values)
         
         if with_plot:
             days = np.array(test_data['date'], dtype="datetime64[ms]")
 
             fig = plt.figure(figsize=(24,12))
- 
+            
             axes = fig.add_subplot(111)
             axes.plot(days, actual_close_prices, 'bo-', markersize=3, label="actual")
             axes.plot(days, predicted_close_prices, 'ro-',markersize=3, label="predicted")
@@ -176,7 +177,7 @@ class StockPredictor(object):
 
             plt.legend()
             if save_plot:
-                filepath = Path('data/HMM_charts/{t}/{t}_{b}_chart.png'.format(c=self.ticker,b=self.bartime))
+                filepath = Path('data/HMM_charts/{t}/{t}_{b}_chart.png'.format(t=self.ticker,b=self.bartime))
                 filepath.parent.mkdir(parents=True, exist_ok=True)
                 plt.savefig(filepath)
             else:
@@ -197,14 +198,18 @@ class StockPredictor(object):
         
         return round(mape, 2)
     
-    def pred_save(self, predictions, df):
-        df = df[['date','open','high','low','close']]
-        df.loc[:,'pred close'] = [round(pred, 2) for pred in predictions]
-        filepath = Path(f"data/predicted/{self.ticker}/{self.ticker}_{self.bartime}_pred.csv")
+    def pred_save(self, filepath=None):
+        df = self.actual_close_data[['date','open','high','low','close']]
+        df.loc[:,'pred close'] = [round(pred, 2) for pred in self.predictions]
+        if filepath is None:
+            filepath = Path(f"data/predicted/{self.ticker}/{self.ticker}_{self.bartime}_pred.csv")
+        filepath = Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(filepath, index=False)
 
     def predict_next_timeframe_price(self):
+        bartime_yf = {'1_day': '1d', '4_hour': '4h', '1_hour': '1h'}
+    
         # get todays open
         open_price = float(yf.Ticker(self.ticker).info['open'])
         # get start and end
