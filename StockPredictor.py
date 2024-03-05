@@ -29,7 +29,9 @@ class StockPredictor(object):
         self.bar_format ='{l_bar}{bar:10}{r_bar}{bar:-10b}'
         self.ticker = ticker
         self.bartime = bartime
-        
+        self.mape = None
+        self.predictions = None
+ 
         self.n_latency_days = n_latency_days
 
         # set the model type name
@@ -160,7 +162,7 @@ class StockPredictor(object):
         self.predictions = predicted_close_prices
         self.actual_close_data = test_data
         
-        mape = self.compute_mape(days, predicted_close_prices, actual_close_prices.values)
+        self.mape = self.compute_mape(days, predicted_close_prices, actual_close_prices.values)
         
         if with_plot:
             days = np.array(test_data['date'], dtype="datetime64[ms]")
@@ -182,7 +184,6 @@ class StockPredictor(object):
                 plt.savefig(filepath)
             else:
                 plt.show()
-        return mape
     
     def compute_mape(self, days, predicted_close_prices, actual_close_prices):
         if days > len(self._test_data):
@@ -200,7 +201,7 @@ class StockPredictor(object):
     
     def pred_save(self, filepath=None):
         df = self.actual_close_data[['date','open','high','low','close']]
-        df.loc[:,'pred close'] = [round(pred, 2) for pred in self.predictions]
+        df.loc[:,'pred'] = [round(pred, 2) for pred in self.predictions]
         if filepath is None:
             filepath = Path(f"data/predicted/{self.ticker}/{self.ticker}_{self.bartime}_pred.csv")
         filepath = Path(filepath)
@@ -223,3 +224,11 @@ class StockPredictor(object):
         data.columns = map(str.lower, data.columns)
         self._test_data = data
         return self.predict_close_price(len(self._test_data) - 1)
+    
+    def getPredictions(self):
+        df = self.actual_close_data[['date','open','high','low','close']]
+        df.loc[:,'pred'] = [round(pred, 2) for pred in self.predictions]
+        return df
+
+    def getMAPE(self):
+        return self.mape

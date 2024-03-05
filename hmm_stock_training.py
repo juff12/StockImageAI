@@ -22,9 +22,9 @@ def main():
             stock_predictor.save_model("models/model/{t}/model_{t}_{b}.pkl".format(t=ticker,b=bartime))
             # set to 10_000 to predict maximum amount of points
             # set to 252 to predict 1 year of trading data for 1_day
-            mape = stock_predictor.predict_close_prices_for_days(10, with_plot=True, save_plot=True)
+            stock_predictor.predict_close_prices_for_days(252, with_plot=True, save_plot=True)
             stock_predictor.pred_save("data/predicted/{t}/{t}_{b}_pred.csv".format(t=ticker,b=bartime))
-            ticker_mape.append(mape)
+            ticker_mape.append(stock_predictor.getMAPE())
         mapes.append(ticker_mape) # add all mapes for stock
         # periodically save the mape in case of crash when iterating over data
         filepath = Path('data/mapes/mapes_temp.pkl')
