@@ -4,9 +4,8 @@ HMM
 TO DO:
 - automate model updates
 - add recompile strategies
-- finish live prediction for 1 hour and 4 hour
-- Abstract out most functionality
-
+- finish live prediction for 1 hour and 4 hour 15min and 5min
+- run crypto models
 
 CV Pattern:
 TO DO:
