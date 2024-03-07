@@ -17,9 +17,9 @@ def main():
         ticker_mape = [ticker]
         for bartime in time_intervals:
             stock_predictor = StockPredictor(ticker=ticker, bartime=bartime, load_model=False, model_type='gaussian')
-            data = pd.read_csv('data/formatted/{t}/{t}_{b}_data_formatted.csv'.format(t=ticker,b=bartime))
+            data = pd.read_csv('stock/data/formatted/{t}/{t}_{b}_data_formatted.csv'.format(t=ticker,b=bartime))
             stock_predictor.fit(data)
-            stock_predictor.save_model("models/model/{t}/model_{t}_{b}.pkl".format(t=ticker,b=bartime))
+            stock_predictor.save_model("stock/models/model/{t}/model_{t}_{b}.pkl".format(t=ticker,b=bartime))
             # set to 10_000 to predict maximum amount of points
             # set to 252 to predict 1 year of trading data for 1_day
             stock_predictor.predict_close_prices_for_days(252, with_plot=True, save_plot=True)
