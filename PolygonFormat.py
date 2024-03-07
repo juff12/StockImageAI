@@ -23,12 +23,6 @@ class PolygonFormat(object):
         _logger.setLevel(logging.DEBUG)
         return _logger
 
-    def split_weekend_data(self, df):
-        df_out = None
-        
-        
-        return df_out
-
     def format_data(self):
         
         self.logger.info('>>> Begining Stock Data Formatting')
@@ -44,9 +38,6 @@ class PolygonFormat(object):
             # function to convert Unix msec timestamp to datetime (YYYY-MM-DD)
             convert_date = lambda x: datetime.fromtimestamp(x / 1000.0).strftime('%Y-%m-%d %H:%M:%S')
             df['date'] = df['timestamp'].apply(convert_date)
-            if self.parentdir == 'crypto':
-                # complete formating for crypto
-                df = self.crypto_format(df)
         except Exception:
             # skip, file formated wrong
             self.logger.error(f'>>> The file could not be opened, check 
@@ -56,9 +47,6 @@ class PolygonFormat(object):
         self.logger.info('Stock Data Formatting Complete <<<')
         # remove uncessary columns
         df = df[['date','open','high','low','close','volume']]
-        
-        
-        
         
         # out file path
         filestring = '{p}/data/formatted/{t}/{t}_{b}_data_formatted.csv'.format(p=self.parentdir,

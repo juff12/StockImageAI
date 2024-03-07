@@ -20,8 +20,8 @@ warnings.filterwarnings("ignore")
 plt.style.use('ggplot')
 
 class StockPredictor(object):
-    def __init__(self, ticker, bartime, load_model=False, model_type='gaussian',
-                 n_hidden_states=4, n_latency_days=10,
+    def __init__(self, ticker, bartime, parentdir='', load_model=False, 
+                 model_type='gaussian', n_hidden_states=4, n_latency_days=10,
                  n_steps_frac_change=50, n_steps_frac_high=10,
                  n_steps_frac_low=10, n_mix=5):
         self._init_logger()
@@ -29,6 +29,7 @@ class StockPredictor(object):
         self.bar_format ='{l_bar}{bar:10}{r_bar}{bar:-10b}'
         self.ticker = ticker
         self.bartime = bartime
+        self.parentdir = parentdir
         self.mape = None
         self.predictions = None
  
@@ -65,9 +66,10 @@ class StockPredictor(object):
     def load_model(self, filepath=None):
         self._logger.info('>>> Loading the model')
         if filepath is None:
-            filepath = Path('models/{m}/{t}/model_{t}_{b}.pkl'.format(m=self.model_type,
-                                                                      t=self.ticker,
-                                                                      b=self.bartime))
+            filepath = Path('{p}/models/{m}/{t}/model_{t}_{b}.pkl'.format(p=self.parentdir,
+                                                                          m=self.model_type,
+                                                                          t=self.ticker,
+                                                                          b=self.bartime))
         try:
             self.hmm = pickle.load(open(filepath, 'rb'))
             self._logger.info('>>> Model Loaded')
@@ -95,7 +97,7 @@ class StockPredictor(object):
  
         return np.column_stack((frac_change, frac_high, frac_low))
     
-    def fit(self, data, test_size=0.33):
+    def fit(self, data, test=True, test_size=0.33):
         self._split_train_test_data(data, test_size)
         self._logger.info('>>> Extracting Features')
         feature_vector = StockPredictor._extract_features(self._train_data)
@@ -106,7 +108,10 @@ class StockPredictor(object):
     def save_model(self, filepath=None):
         # save the model
         if filepath is None:
-            filepath = Path("models/model/{t}/model_{t}_{b}.pkl".format(t=self.ticker,b=self.bartime))
+            filepath = Path("{p}/models/{m}/{t}/model_{t}_{b}.pkl".format(p=self.parentdir,
+                                                                          m=self.model_type,
+                                                                          t=self.ticker,
+                                                                          b=self.bartime))
         filepath = Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(filepath, "wb") as file:
@@ -179,7 +184,10 @@ class StockPredictor(object):
 
             plt.legend()
             if save_plot:
-                filepath = Path('data/HMM_charts/{t}/{t}_{b}_chart.png'.format(t=self.ticker,b=self.bartime))
+                filepath = Path('{p}/data/charts/{m}_charts/{t}/{t}_{b}_chart.png'.format(p=self.parentdir,
+                                                                                          m=self.model_type,
+                                                                                          t=self.ticker,
+                                                                                          b=self.bartime))
                 filepath.parent.mkdir(parents=True, exist_ok=True)
                 plt.savefig(filepath)
             else:
@@ -199,11 +207,14 @@ class StockPredictor(object):
         
         return round(mape, 2)
     
-    def pred_save(self, filepath=None):
+    def save_pred(self, filepath=None):
         df = self.actual_close_data[['date','open','high','low','close']]
         df.loc[:,'pred'] = [round(pred, 2) for pred in self.predictions]
         if filepath is None:
-            filepath = Path(f"data/predicted/{self.ticker}/{self.ticker}_{self.bartime}_pred.csv")
+            filepath = Path("{p}/data/predicted/{m}/{t}/{t}_{b}_pred.csv".format(p=self.parentdir,
+                                                                                 m=self.model_type,
+                                                                                 t=self.ticker,
+                                                                                 b=self.bartime))
         filepath = Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(filepath, index=False)
