@@ -6,8 +6,8 @@ import pickle
 
 def main():
     # read in the arrays for tickers
-    sp500_tickers = pickle.load(open('iterables/sp500_tickers.pkl', 'rb'))
-    nasdaq_100_tickers = pickle.load(open('iterables/nasdaq_100_tickers.pkl', 'rb'))
+    sp500_tickers = pickle.load(open('stock/iterables/sp500_tickers.pkl', 'rb'))
+    nasdaq_100_tickers = pickle.load(open('stock/iterables/nasdaq_100_tickers.pkl', 'rb'))
     
     python_path = str(Path.cwd()).replace('repos\StockImageAI','') + '\\anaconda3\python.exe '
     script_path = str(Path.cwd()) + '\chart_image_create.py '

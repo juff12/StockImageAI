@@ -1,9 +1,7 @@
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
-from tqdm import tqdm
 import logging
-import pickle
 
 class PolygonFormat(object):
     def __init__(self, ticker, bartime, parentdir):
@@ -13,19 +11,18 @@ class PolygonFormat(object):
         self.bartime = bartime
         self.parentdir = parentdir
 
-    def _init_logger():
-        _logger = logging.getLogger(__name__)
+    def _init_logger(self):
+        self._logger = logging.getLogger(__name__)
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
             '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
-        _logger.addHandler(handler)
-        _logger.setLevel(logging.DEBUG)
-        return _logger
+        self._logger.addHandler(handler)
+        self._logger.setLevel(logging.DEBUG)
 
     def format_data(self):
         
-        self.logger.info('>>> Begining Stock Data Formatting')
+        self._logger.info('>>> Begining Data Formatting')
         # returns because there is an issue with the file
         try:
             # load raw data frames
@@ -40,18 +37,31 @@ class PolygonFormat(object):
             df['date'] = df['timestamp'].apply(convert_date)
         except Exception:
             # skip, file formated wrong
-            self.logger.error(f'>>> The file could not be opened, check 
-                              parent directory. {self.tickercekr} and 
+            self._logger.error(f'>>> The file could not be opened, check 
+                              parent directory. {self.ticker} and 
                               {self.bartime} and {self.parentdir}')
             return
-        self.logger.info('Stock Data Formatting Complete <<<')
+        self._logger.info('Data Formatting Complete <<<')
         # remove uncessary columns
-        df = df[['date','open','high','low','close','volume']]
+        self.formatted_data = df[['date','open','high','low','close','volume']]
         
+    def save_formatted_data(self, filestring=None):
         # out file path
-        filestring = '{p}/data/formatted/{t}/{t}_{b}_data_formatted.csv'.format(p=self.parentdir,
-                                                                                t=self.ticker,
-                                                                                b=self.bartime)
+        if filestring is None:
+            filestring = '{p}/data/formatted/{t}/{t}_{b}_data_formatted.csv'.format(p=self.parentdir,
+                                                                                    t=self.ticker,
+                                                                                    b=self.bartime)
         filepath = Path(filestring)
         filepath.parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(filepath)
+        self.formatted_data.to_csv(filepath)
+    
+    def seperate_weekend_data(self):
+        #weekend
+        weekend, weekday = [], []
+        for idx, row in self.formatted_data.iterrows():
+            if datetime.strptime(row['date'], '%Y-%m-%d').weekday() < 5:
+                # its a weekday
+                weekday.append(row)
+            else: # its a weekend
+                weekend.append(row)
+        return pd.DataFrame(weekday), pd.DataFrame(weekend)
