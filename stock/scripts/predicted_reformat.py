@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 from pathlib import Path
 import pickle
@@ -18,9 +17,9 @@ def reformat_pred(df_pred, df_orig):
 
 def main():
     # read in the iterables
-    sp500_tickers = pickle.load(open('iterables/sp500_tickers.pkl', 'rb'))
-    nasdaq_100_tickers = pickle.load(open('iterables/nasdaq_100_tickers.pkl', 'rb'))
-    time_intervals = pickle.load(open('iterables/time_intervals.pkl', 'rb'))
+    sp500_tickers = pickle.load(open('stock/iterables/sp500_tickers.pkl', 'rb'))
+    nasdaq_100_tickers = pickle.load(open('stock/iterables/nasdaq_100_tickers.pkl', 'rb'))
+    time_intervals = pickle.load(open('stock/iterables/time_intervals.pkl', 'rb'))
 
     # add the high, low, open to the predicted datasets
     for ticker in sp500_tickers:

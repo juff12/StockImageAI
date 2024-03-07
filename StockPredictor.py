@@ -10,9 +10,8 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from pathlib import Path
 from timeit import default_timer as timer
-import sys
 from datetime import date, datetime, timedelta
-import yfinance as yf
+
 
 # Supress warning in hmmlearn
 warnings.filterwarnings("ignore")
@@ -219,20 +218,7 @@ class StockPredictor(object):
         filepath.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(filepath, index=False)
 
-    def predict_next_timeframe_price(self):
-        bartime_yf = {'1_day': '1d', '4_hour': '4h', '1_hour': '1h'}
-    
-        # get todays open
-        open_price = float(yf.Ticker(self.ticker).info['open'])
-        # get start and end
-        start = datetime.now() - timedelta(60)
-        start = start.strftime('%Y-%m-%d')
-        end = date.today().strftime('%Y-%m-%d')
-
-        # get date for past 60 days
-        data = yf.download(self.ticker, start=start, end=end)
-        data.loc[date.today()] = [open_price, 0, 0, 0, 0, 0]
-        data.columns = map(str.lower, data.columns)
+    def predict_next_timeframe_price(self, data):
         self._test_data = data
         return self.predict_close_price(len(self._test_data) - 1)
     

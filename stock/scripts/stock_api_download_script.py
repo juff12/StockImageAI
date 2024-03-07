@@ -21,8 +21,8 @@ def get_ticker_data(presets: tuple, client: RESTClient):
 # code of scipt
 def main():
     # read in the iterables
-    sp500_tickers = pickle.load(open('iterables/sp500_tickers.pkl', 'rb'))
-    nasdaq_100_tickers = pickle.load(open('iterables/nasdaq_100_tickers.pkl', 'rb'))
+    sp500_tickers = pickle.load(open('stock/iterables/sp500_tickers.pkl', 'rb'))
+    nasdaq_100_tickers = pickle.load(open('stock/iterables/nasdaq_100_tickers.pkl', 'rb'))
 
     # yapi key
     api_key = ""
