@@ -1,4 +1,6 @@
 import pickle
+import sys
+sys.path
 from PolygonFormat import PolygonFormat
 import tqdm
 

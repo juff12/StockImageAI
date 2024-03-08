@@ -54,3 +54,9 @@ api_keys/
 
 # temp files
 test.py
+
+# data
+stock/data
+crypto/data
+ImageAI/images
+ImageAI/images_stock
