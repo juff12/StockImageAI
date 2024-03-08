@@ -2,6 +2,9 @@ import pickle
 from pathlib import Path
 import pandas as pd
 import yfinance as yf
+import PolygonFormat as PolygonFormat
+
+
 # read in the iterables
 sp500_tickers = pickle.load(open('iterables/sp500_tickers.pkl', 'rb'))
 nasdaq_100_tickers = pickle.load(open('iterables/nasdaq_100_tickers.pkl', 'rb'))

@@ -1,8 +1,6 @@
 import pandas as pd
 from lightweight_charts import Chart
 from pathlib import Path
-import sys
-import time
 
 # interval of viewing the chart
 
@@ -16,17 +14,20 @@ bartimes = ['1_day','4_hour','1_hour','15_min']
 barspacing = {'1_day': 3, '4_hour': 1.75, '1_hour': 1.5}
 
 
-def save_screenshot(image: list,filename: str, ticker: str, chart_type: str, bartime: str):
-    filepath = Path('ImageAI/images/'+ticker+'/'+chart_type+'/'+bartime+'/'+filename+"_screenshot.png")
+def save_screenshot(image: list,filename: str, ticker: str, chart_type: str, bartime: str, parentdir: str):
+    filepath = Path('ImageAI/images_{p}/{t}/{c}/{b}/{f}_screenshot.png'.format(p=parentdir,
+                                                                               t=ticker,c=chart_type,
+                                                                               b=bartime,f=filename))
     filepath.parent.mkdir(parents=True, exist_ok=True)
     with open(filepath, "wb") as out:
         out.write(image)
 
-def screenshot_chart(ticker: str, bartime: str, chart_type: str):    
+def screenshot_chart(ticker: str, bartime: str, chart_type: str, parentdir: str):    
     col_labels = ['date','open','high','low','close','volume']
     # Columns: time | open | high | low | close | volume
     try:
-        df = pd.read_csv('stock/data/formatted/'+ticker +'/'+ticker+'_'+bartime+'_data_formatted.csv')
+        df = pd.read_csv('{p}/data/formatted/{t}/{t}_{b}_data_formatted.csv'.format(p=parentdir,
+                                                                                    t=ticker,b=bartime))
     except Exception:
         return # file does not exist, skip
     chart = Chart()
@@ -39,19 +40,25 @@ def screenshot_chart(ticker: str, bartime: str, chart_type: str):
     chart.fit()
     chart.show()
     image = chart.screenshot()
-    filename = (ticker + '_' + bartime + '_' + chart_type + '_' + bartime + 
-                '_' + '1_to_' + bartime + '_' + str(interval[bartime]))
-    save_screenshot(image, filename, ticker, chart_type, bartime)       
+    
+    _, unit = bartime.split('_')
+    filename = '{t}_{b}_{c}_{u}_1_to_{u}_{e}'.format(t=ticker,b=bartime,c=chart_type,
+                                                     u=unit,e=str(interval[bartime]))
+    
+    save_screenshot(image, filename, ticker, chart_type, bartime, parentdir)       
     # intialize variables to keep track of updates
     count, start_idx, idx = 1, increment[bartime], interval[bartime]
+    
     while idx < df['date'].size:
         chart.update(df[col_labels].iloc[idx])
         # next increment starting point
+        size, unit = bartime.split('_')
         if count == increment[bartime] or idx + 1 == df['date'].size:
-            filename = (ticker + '_' + bartime + '_' + chart_type + '_' + bartime + '_' + 
-                        str(start_idx) + '_to_' + bartime + '_' + str(idx))
+            filename = '{t}_{b}_{c}_{u}_{s}_to_{u}_{e}'.format(t=ticker,b=bartime,c=chart_type,
+                                                               u=unit,s=str(start_idx),e=str(idx))
+            
             image = chart.screenshot()
-            save_screenshot(image, filename, ticker, chart_type, bartime)
+            save_screenshot(image, filename, ticker, chart_type, bartime, parentdir)
             count = 1
             idx += 1
             start_idx += increment[bartime]
@@ -60,15 +67,3 @@ def screenshot_chart(ticker: str, bartime: str, chart_type: str):
         count += 1
         #time.sleep(0.005)
     chart.exit()
-
-# main code of script
-def main():
-    # chart_types = ['candel','line']
-    ticker = sys.argv[1]
-    #screenshot_chart(ticker, '1_day', 'candle')
-    screenshot_chart(ticker, '4_hour', 'candle')
-    #screenshot_chart(ticker, '1_hour', 'candle')
-
-# run script
-if __name__ == '__main__':
-    main()

@@ -3,11 +3,26 @@ from polygon import RESTClient
 import logging
 from datetime import datetime, timedelta
 import pandas as pd
+import numpy as np
+import time
+
 
 class TradingBot(object):
-    def __init__(self, ticker, bartime, api_key, 
-                 _type='stock', model_type='gaussian'):
+    def __init__(self, ticker, bartime, api_key,
+                 open_strategy='normal', close_strategy='normal',
+                 allow_shorts=False, _type='stock', model_type='gaussian'):
         self._init_logger()
+
+        open_strats = {'normal': self.normal_open(), 'layered': self.layered_open(),
+                       'stocastic': self.stocastic_open(), 'stocastic_layered': self.stocastic_layered_open()}
+        close_strats = {'normal': self.hmm_strategy(), 'simulated_annealing': self.simulated_annealing(),
+                        'hill_climbing': self.hill_climbing()}
+
+        # set the closing and opening strategy function
+        self.open_strategy = open_strats[open_strategy]
+        self.close_strategy = close_strats[close_strategy]
+        
+        self.allow_shorts=allow_shorts
 
         # var for loading model
         self.ticker = ticker
@@ -65,9 +80,13 @@ class TradingBot(object):
         min_close = self.client.get_snapshot_ticker(ticker=self._ticker).min.close
         return min_close
 
-    def predict_price(self, step_size, step_unit):
-        open_price = self.get_minute_open()
-
+    def predict_price(self, open_price=None, step_size=None, step_unit=None):
+        if open_price is None:
+            open_price = self.get_minute_open()
+        # detect unitialized steps
+        if step_size is None or step_unit is None:
+            step_size = self._multiplier
+            step_unit = self._timespan
         # data for the time interval, default is 11 (10 periods)
         interval_data = self.get_data_for_interval(step_size, step_unit)
         interval_data.loc[len(interval_data)] = [open_price] + [0 for _ in range(0, len(interval_data.iloc[0])-1)]
@@ -89,6 +108,74 @@ class TradingBot(object):
                 break
         return self.predict_price(step_size, step_unit)
 
+    def close_trade(self):
+        
+        
+        # place the limits orders, update acording to strategy
+        # update until trade closes
+        # emergency market close
+        
+        # get updates from API to see that the trade is closed
+        
+        # return true if trade is closed
+        return True
+
+    def open_trade(self):
+        # get the predicted price
+        open_price = self.get_minute_open()
+        pred_price = self.predict_price(open_price)
+        if self.allow_shorts is False and open_price > pred_price:
+            # dont take a trade
+            return None
+        return self.open_strategy(open_price, pred_price)
+        
+    def normal_open(self, open_price, pred_price, tol=0.005):
+        # return a opening trade strategy and the predicted closing price
+        current_price = self.get_current_price()
+        if open_price < pred_price:
+            return ([(current_price + current_price * tol, 1.0)], pred_price)
+        return ([(current_price - current_price * tol, 1.0)], pred_price)
+
+    def layered_open(self, open_price, pred_price, num=5):
+        local_minmax = self.getLocalMinMax()
+        if local_minmax < open_price:
+            # creates a layered order of five orders split evenly between 
+            # the recent low and current price
+            layered_order = list(np.linspace(local_minmax, open_price, num))
+            return ([(order_price, 1/num) for order_price in layered_order], pred_price)
+        else:
+            # creates a layered order of five orders split evenly between 
+            # the recent low and current price
+            layered_order = list(np.linspace(open_price, local_minmax, num))
+            return ([(order_price, 1/num) for order_price in layered_order], pred_price)
+    
+    def stocastic_open(self, open_price, pred_price, temp=10, tol=0.005):
+        if open_price < pred_price:
+            # longing
+            prev_price = self.get_current_price()
+            while True:
+                if np.random.randint(0,temp) == 0:
+                    return ([(prev_price - prev_price * tol, 1.0)], pred_price)
+                
+                current_price = self.get_current_price()
+                
+                if current_price < prev_price:
+                    temp -= 1
+                    prev_price = current_price
+                time.sleep()
+        else:
+            # shorting
+            return None
+
+    def stocastic_layered_open(self, open_price, pred_price,):
+        return None
+
+    def hmm_strategy(self):
+        return None
+    
+    def hill_climbing(self):
+        return None
+
     def simulated_annealing(self):
         # this function is called at the start of the inverval, grab the prediction
         self.interval_pred = self.predict_price(self._multiplier, self._timespan)
@@ -109,3 +196,6 @@ class TradingBot(object):
         # if we go beyond the predicted price, we increase the probability of closing trade
 
         return
+    
+    def getLocalMinMax(self):
+        return None
