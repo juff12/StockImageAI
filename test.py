@@ -1,24 +1,22 @@
-import requests
+from stock_trading import StockPredictor
+import pandas as pd
 
-def get_currency_price(currency_code):
-    # Coinbase API endpoint for currency price
-    url = f"https://api.coinbase.com/v2/prices/{currency_code.upper()}-USD/spot"
-    
-    try:
-        response = requests.get(url)
-        data = response.json()
-        
-        # Extracting the current price of the given currency
-        currency_price = data['data']['amount']
-        
-        return float(currency_price)
-    
-    except Exception as e:
-        print("Error occurred:", e)
-        return None
+ticker = 'btcusd'
+bartime = '1_day'
+parentdir = 'crypto'
+frac_change_lower = -0.125 # 0.125 for 5_min btc
+frac_change_upper = 0.125
+frac_high_upper = 0.125
+frac_low_upper = 0.125
+n_steps_frac_change = 50
+n_steps_frac_high = 10
+n_steps_frac_low = 10
 
-# Example usage:
-currency_code = "ETH"  # Change this to any desired currency code
-currency_price = get_currency_price(currency_code)
-if currency_price is not None:
-    print(f"Current price of {currency_code}: ${currency_price:.2f}")
+predictor = StockPredictor(ticker,bartime,parentdir,frac_change_lower=frac_change_lower,frac_change_upper=frac_change_upper,
+                           frac_high_upper=frac_high_upper,frac_low_upper=frac_low_upper,n_steps_frac_change=n_steps_frac_change,
+                           n_steps_frac_high=n_steps_frac_high,n_steps_frac_low=n_steps_frac_low)
+data = pd.read_csv('data/{p}/data/formatted/{t}/{t}_{b}_data_formatted.csv'.format(p=parentdir,t=ticker,b=bartime))
+predictor.fit(data)
+predictor.predict_close_prices_for_days(250,recent=True,with_plot=True,save_plot=True)
+predictor.save_pred()
+print(f'Predicted MAPE: {predictor.getMAPE()}')

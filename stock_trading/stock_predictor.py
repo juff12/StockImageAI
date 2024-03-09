@@ -21,7 +21,8 @@ plt.style.use('ggplot')
 class StockPredictor(object):
     def __init__(self, ticker, bartime, parentdir='', load_model=False, 
                  model_type='gaussian', n_hidden_states=4, n_latency_days=10,
-                 n_steps_frac_change=50, n_steps_frac_high=10,
+                 frac_change_lower=-0.1, frac_change_upper=0.1, frac_high_upper=0.1,
+                 frac_low_upper=0.1, n_steps_frac_change=50, n_steps_frac_high=10,
                  n_steps_frac_low=10, n_mix=5):
         self._init_logger()
         # set tqdm barformat
@@ -45,8 +46,8 @@ class StockPredictor(object):
             else:
                 self.hmm = GaussianHMM(n_components=n_hidden_states)
         
-        self._compute_all_possible_outcomes(
-            n_steps_frac_change, n_steps_frac_high, n_steps_frac_low)
+        self._compute_all_possible_outcomes(frac_change_lower, frac_change_upper, frac_high_upper,
+                                            frac_low_upper, n_steps_frac_change, n_steps_frac_high, n_steps_frac_low)
     
     def _init_logger(self):
         self._logger = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ class StockPredictor(object):
  
         return np.column_stack((frac_change, frac_high, frac_low))
     
-    def fit(self, data, test=True, test_size=0.33):
+    def fit(self, data: pd.DataFrame, test=True, test_size=0.33):
         self._split_train_test_data(data, test_size)
         self._logger.info('>>> Extracting Features')
         feature_vector = StockPredictor._extract_features(self._train_data)
@@ -117,11 +118,11 @@ class StockPredictor(object):
             pickle.dump(self.hmm, file)
     
     
-    def _compute_all_possible_outcomes(self, n_steps_frac_change,
-                                       n_steps_frac_high, n_steps_frac_low):
-        frac_change_range = np.linspace(-0.1, 0.1, n_steps_frac_change)
-        frac_high_range = np.linspace(0, 0.1, n_steps_frac_high)
-        frac_low_range = np.linspace(0, 0.1, n_steps_frac_low)
+    def _compute_all_possible_outcomes(self, frac_change_lower, frac_change_upper, frac_high_upper,
+                                       frac_low_upper, n_steps_frac_change, n_steps_frac_high, n_steps_frac_low):
+        frac_change_range = np.linspace(frac_change_lower, frac_change_upper, n_steps_frac_change)
+        frac_high_range = np.linspace(0, frac_high_upper, n_steps_frac_high)
+        frac_low_range = np.linspace(0, frac_low_upper, n_steps_frac_low)
  
         self._possible_outcomes = np.array(list(itertools.product(
             frac_change_range, frac_high_range, frac_low_range)))
@@ -146,13 +147,16 @@ class StockPredictor(object):
         
         return open_price * (1 + predicted_frac_change)
 
-    def predict_close_prices_for_days(self, days, with_plot=False, save_plot=False):
+    def predict_close_prices_for_days(self, days, recent=False, with_plot=False, save_plot=False):
         if self._test_data is None:
             self._logger.error('No test data has been loaded')
             return None
-
+        
+        temp_test = self._test_data
         if days > len(self._test_data):
             days = len(self._test_data)
+        elif recent: # set the test data to the most recent data
+            self._test_data = self._test_data[len(self._test_data)-days:]
         
         self._logger.info('>>> Begining Prediction Generation')
         predicted_close_prices = []
@@ -191,7 +195,12 @@ class StockPredictor(object):
                 plt.savefig(filepath)
             else:
                 plt.show()
-    
+        
+        # change test data back
+        self._test_data = temp_test
+        
+        
+        
     def compute_mape(self, days, predicted_close_prices, actual_close_prices):
         if days > len(self._test_data):
             days = len(self._test_data)

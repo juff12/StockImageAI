@@ -1,6 +1,5 @@
 from .stock_predictor import StockPredictor
 from .coinbase_wrapper import CoinbaseWrapper
-from polygon import RESTClient
 import logging
 from datetime import datetime, timedelta
 import pandas as pd
