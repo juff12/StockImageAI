@@ -1,5 +1,4 @@
 import pickle
-import os
 from stock_trading import StockPredictor
 import pandas as pd
 from pathlib import Path

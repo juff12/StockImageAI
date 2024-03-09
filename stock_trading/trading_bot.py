@@ -1,4 +1,5 @@
 from .stock_predictor import StockPredictor
+from .coinbase_wrapper import CoinbaseWrapper
 from polygon import RESTClient
 import logging
 from datetime import datetime, timedelta
@@ -27,24 +28,14 @@ class TradingBot(object):
         # var for loading model
         self.ticker = ticker
         self.bartime = bartime
-
-        # var for api
-        self._multiplier, self._timespan = bartime.split('_')
-        #convert multiplier to int
-        self._multiplier = int(self._multiplier)
-
-        if self._timespan == 'min': # converts for RESTClient
-            self._timespan = 'minute'
-        self._ticker = ticker
-        if self._ticker == 'crypto': # convert for crypto
-            self._ticker = 'X:' + self._ticker
         
         # the predicted price for this time interval
         self.interval_pred = None
         
         self.predictor = StockPredictor(ticker, bartime, parentdir=_type,
                                         load_model=True, model_type=model_type)
-        self.client = RESTClient(api_key=api_key)
+        
+        self.coinbase = CoinbaseWrapper(ticker)
 
     def _init_logger(self):
         self._logger = logging.getLogger(__name__)
@@ -73,8 +64,8 @@ class TradingBot(object):
         return interval_data
     
     def get_minute_open(self):
-        min_open = self.client.get_snapshot_ticker(ticker=self._ticker).min.open
-        return min_open
+        
+        return
 
     def get_minute_close(self):
         min_close = self.client.get_snapshot_ticker(ticker=self._ticker).min.close
