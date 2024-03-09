@@ -56,7 +56,7 @@ api_keys/
 test.py
 
 # data
-stock/data
-crypto/data
+data/crypto/data
+data/stocks/data
 ImageAI/images
 ImageAI/images_stock
