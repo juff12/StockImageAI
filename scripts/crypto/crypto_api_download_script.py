@@ -24,7 +24,7 @@ def get_ticker_data(presets: tuple, client: RESTClient):
 # code of scipt
 def main():
     # read in the iterables
-    coinbae_tickers = pickle.load(open('data/crypto/iterables/coinbase_tickers.pkl', 'rb'))
+    coinbase_tickers = pickle.load(open('data/crypto/iterables/coinbase_tickers.pkl', 'rb'))
     time_intervals = pickle.load(open('data/crypto/iterables/time_intervals.pkl', 'rb'))
     
     # yapi key
@@ -39,7 +39,7 @@ def main():
     limit = 50000
 
     # # daily data
-    for ticker in tqdm(coinbae_tickers):
+    for ticker in tqdm(coinbase_tickers):
         for bartime in time_intervals:
             multiplier, timespan = bartime.split('_')
             # reformats minute

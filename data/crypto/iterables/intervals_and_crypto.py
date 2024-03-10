@@ -4,14 +4,13 @@ import pickle
 def main():
 
     coinbase_crypto_tickers = [
-        "BTCUSD", "ETHUSD", "XRPUSD", "BCHUSD", "LTCUSD", "EOSUSD", "DASHUSD", "LINKUSD", "ZRXUSD", "ETCUSD",
-        "XTZUSD", "OXTUSD", "REPUSD", "ATOMUSD", "ALGOUSD", "DNTUSD", "BATUSD", "CVCUSD", "MANAUSD", "KNCUSD",
-        "LOOMUSD", "GNTUSD", "NUUSD", "MKRUSD", "NMRUSD", "OMGUSD", "RLCUSD", "BNTUSD", "SNXUSD", "COMPUSD",
-        "UMAUSD", "YFIUSD", "RENUSD", "BALUSD", "WBTCUSD", "AAVEUSD", "FILUSD", "ADAUSD", "GRTUSD",
-        "SOLUSD", "LRCUSD", "CGLDUSD", "CTSIUSD", "SKLUSD", "SUSHIUSD", "ANKRUSD", "1INCHUSD", "ENJUSD",
-        "NKNUSD", "OGNUSD", "CHZUSD", "RLYUSD", "TRBUSD", "BONDUSD", "KEEPUSD", "MLNUSD",
-        "TRUUSD", "AMPUSD", "FORTHUSD", "GHSTUSD", "TBTCUSD", "MASKUSD", "AUDIOUSD", "GTCUSD",
-        "MIRUSD", "AXSUSD", "LPTUSD", "FLOWUSD", "FARMUSD", "DAIUSD"
+        "btcusd", "ethusd", "xrpusd", "bchusd", "ltcusd", "eosusd", "dashusd", "linkusd", "zrxusd", "etcusd",
+        "xtzusd", "oxtusd", "repusd", "atomusd", "algousd", "dntusd", "batusd", "cvcusd", "manausd", "kncusd",
+        "loomusd", "gntusd", "nuusd", "mkrusd", "nmrusd", "omgusd", "rlcusd", "snxusd", "compusd",
+        "umausd", "yfiusd", "renusd", "balusd", "wbtcusd", "aaveusd", "filusd", "adausd", "grtusd",
+        "solusd", "lrcusd", "cgldusd", "ctsiusd", "sklusd", "sushiusd", "ankrusd", "1inchusd", "enjusd",
+        "nknusd", "ognusd", "chzusd", "rlyusd", "trbusd", "bondusd", "keepusd", "mlnusd","truusd", "forthusd", 
+        "ghstusd", "maskusd", "audiousd", "gtcusd","mirusd", "axsusd", "lptusd", "flowusd", "farmusd"
     ]
 
     time_intervals = ['1_day','4_hour','1_hour', '15_minute', '5_minute']

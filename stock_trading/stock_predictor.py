@@ -12,14 +12,13 @@ from pathlib import Path
 from timeit import default_timer as timer
 from datetime import date, datetime, timedelta
 
-
 # Supress warning in hmmlearn
 warnings.filterwarnings("ignore")
 # Change plot style to ggplot (for better and more aesthetic visualisation)
 plt.style.use('ggplot')
 
 class StockPredictor(object):
-    def __init__(self, ticker, bartime, parentdir='', load_model=False, 
+    def __init__(self, ticker, bartime, parentdir='stock', load_model=False, 
                  model_type='gaussian', n_hidden_states=4, n_latency_days=10,
                  frac_change_lower=-0.1, frac_change_upper=0.1, frac_high_upper=0.1,
                  frac_low_upper=0.1, n_steps_frac_change=50, n_steps_frac_high=10,
@@ -97,7 +96,11 @@ class StockPredictor(object):
  
         return np.column_stack((frac_change, frac_high, frac_low))
     
-    def fit(self, data: pd.DataFrame, test=True, test_size=0.33):
+    def fit(self, data: pd.DataFrame, train_start_date=None, test=True, test_size=0.33):
+        if train_start_date != None:
+            train_start = data['date'].index[data['date'] == train_start_date.strftime('%Y-%m-%d %H:%M:%S')].to_list()[0]
+            last_n_entries = len(data) - train_start
+            data = data.tail(last_n_entries)
         self._split_train_test_data(data, test_size)
         self._logger.info('>>> Extracting Features')
         feature_vector = StockPredictor._extract_features(self._train_data)
@@ -132,7 +135,7 @@ class StockPredictor(object):
         previous_data_end_index = max(0, day_index - 1)
         previous_data = self._test_data.iloc[previous_data_end_index: previous_data_start_index]
         previous_data_features = StockPredictor._extract_features(previous_data)
- 
+
         outcome_score = []
         for possible_outcome in self._possible_outcomes:
             total_data = np.row_stack((previous_data_features, possible_outcome))
@@ -182,7 +185,7 @@ class StockPredictor(object):
             axes.plot(days, predicted_close_prices, 'ro-',markersize=3, label="predicted")
             axes.set_title(f'{self.ticker.upper()} - Predicted vs Actual Prices ({self.bartime})')
             axes.set_xlabel('Date')
-            axes.set_ylabel('Stock Value (US Dollars)')
+            axes.set_ylabel('Value (US Dollars)')
             fig.autofmt_xdate()
 
             plt.legend()

@@ -35,35 +35,37 @@ class ModelChecker(object):
             # if trading in same direction 
             if ((pred_diff >= 0 and actual_diff >= 0) or 
                 (pred_diff <= 0 and actual_diff <= 0)):
-                pnl.append(abs(actual_diff))
+                pnl.append(abs(actual_diff) / row['open'])
             else: # assumes trade at open
-                pnl.append(-1*abs(actual_diff))
+                pnl.append(-1*abs(actual_diff) / row['open'])
         open_avg = open_avg / len(data)
         pnl = np.array(pnl)
         mean, std, var = np.mean(pnl), np.std(pnl), np.var(pnl)
-        pnl = np.sum(pnl)        
-        return [round(item,2) for item in [pnl, open_avg, mean, std, var]]
+        pnl = np.sum(pnl)
+        return [pnl, open_avg, mean, std, var]
 
-    def calc_all_pnl(self, filepath=None):
+    def calc_all_pnl(self, save_steps=True):
         metrics = ['_pnl', '_open_avg', '_mean', '_std', '_var']
-        labels = [bartime + metric for bartime in self.time_intervals for metric in metrics]
         
-        pnl_data = {}
-        
-        for ticker in self.ticker_list:
-            pnl_row = []
-            for bartime in self.time_intervals:
-                data = pd.read_csv("{p}/data/predicted/{m}/{t}/{t}_{b}_pred.csv".format(p=self.parentdir,
+        for bartime in self.time_intervals:
+            pnl_time = []
+            for ticker in self.ticker_list:
+                data = pd.read_csv("data/{p}/predicted/{m}/{t}/{t}_{b}_pred.csv".format(p=self.parentdir,
                                                                                         m=self.model_type,
                                                                                         t=ticker,
                                                                                         b=bartime))
                 # pnl for bartime and average open for bartime
-                pnl_row.append(self.pnl_calc(data))
-            pnl_data[ticker] = np.array(pnl_row).flatten()
-        pnl_df = pd.DataFrame.from_dict(pnl_data,orient='index',columns=labels)
-        if filepath:
-            pnl_df.to_csv(filepath)
-        return pnl_df
+                pnl_time.append([ticker] + self.pnl_calc(data))
+            if save_steps:
+                labels = ["ticker"] + [bartime + metric for metric in metrics]
+                df = pd.DataFrame(pnl_time, columns=labels)
+                df.set_index('ticker', inplace=True)
+                filepath = Path('data/{p}/pnl/{m}/pnl_{b}_summary.csv'.format(p=self.parentdir,
+                                                                              m=self.model_type,
+                                                                              t=ticker,
+                                                                              b=bartime))
+                filepath.parent.mkdir(parents=True, exist_ok=True)
+                df.to_csv(filepath)
     
     def find_losers(self, bartime, pnl_df):
         df_losers = pnl_df[bartime].loc[pnl_df[bartime] <= 0]
