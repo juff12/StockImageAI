@@ -98,7 +98,8 @@ class StockPredictor(object):
     
     def fit(self, data: pd.DataFrame, train_start_date=None, test=True, test_size=0.33):
         if train_start_date != None:
-            train_start = data['date'].index[data['date'] == train_start_date.strftime('%Y-%m-%d %H:%M:%S')].to_list()[0]
+            data['date'] = data['date'].astype('datetime64[ns]')
+            train_start = data['date'].index[data['date'].dt.date == train_start_date.date()].to_list()[0]
             last_n_entries = len(data) - train_start
             data = data.tail(last_n_entries)
         self._split_train_test_data(data, test_size)

@@ -54,9 +54,11 @@ api_keys/
 
 # temp files
 test.py
+test2.py
+coinbase_now.pkl
 
 # data
-data/crypto/data
+data/crypto/data/raw
 data/stocks/data
 ImageAI/images
 ImageAI/images_stock

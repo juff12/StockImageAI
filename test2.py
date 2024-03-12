@@ -1,5 +1,6 @@
 
 import pandas as pd
+import itertools
 from hmmlearn.hmm import GaussianHMM, GMMHMM
 from sklearn.model_selection import train_test_split
 import time
@@ -7,7 +8,7 @@ import numpy as np
 
 class StockPredictor(object):
     def __init__(self, data, 
-                 model_type='gaussian', n_hidden_states=4, n_latency_days=10,
+                 model_type='gaussian', n_hidden_states=2, n_latency_days=10,
                  frac_change_lower=-0.1, frac_change_upper=0.1, frac_high_upper=0.1,
                  frac_low_upper=0.1, n_steps_frac_change=50, n_steps_frac_high=10,
                  n_steps_frac_low=10, n_mix=5):

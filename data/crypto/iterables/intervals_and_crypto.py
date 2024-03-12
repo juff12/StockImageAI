@@ -6,7 +6,7 @@ def main():
     coinbase_crypto_tickers = [
         "btcusd", "ethusd", "xrpusd", "bchusd", "ltcusd", "eosusd", "dashusd", "linkusd", "zrxusd", "etcusd",
         "xtzusd", "oxtusd", "repusd", "atomusd", "algousd", "dntusd", "batusd", "cvcusd", "manausd", "kncusd",
-        "loomusd", "gntusd", "nuusd", "mkrusd", "nmrusd", "omgusd", "rlcusd", "snxusd", "compusd",
+        "loomusd", "nuusd", "mkrusd", "nmrusd", "omgusd", "rlcusd", "snxusd", "compusd",
         "umausd", "yfiusd", "renusd", "balusd", "wbtcusd", "aaveusd", "filusd", "adausd", "grtusd",
         "solusd", "lrcusd", "cgldusd", "ctsiusd", "sklusd", "sushiusd", "ankrusd", "1inchusd", "enjusd",
         "nknusd", "ognusd", "chzusd", "rlyusd", "trbusd", "bondusd", "keepusd", "mlnusd","truusd", "forthusd", 

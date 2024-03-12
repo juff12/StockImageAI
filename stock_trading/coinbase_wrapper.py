@@ -38,6 +38,7 @@ class CoinbaseWrapper(object):
         if response.status_code == 200:
             candles = response.json()
             if candles is not None:
+                candles.reverse()
                 candles_df = pd.DataFrame(candles, columns=['date','low','high','open','close','volume'])
                 candles_df['date'] = candles_df['date'].apply(lambda x: datetime.utcfromtimestamp(x))
                 return candles_df
@@ -49,11 +50,11 @@ class CoinbaseWrapper(object):
         start, end = None, None
         four_hour_candles = []
         for idx, row in candles_df.iterrows():
-            if len(four_hour_candles) >= 11:
+            if len(four_hour_candles) >= 75:
                 break # breaks out before it throws error for index not found
-            if (datetime(row['date']).hour % 4 == 0) and end is None:
+            if (row['date'].hour % 4 == 0) and end is None:
                 end = idx+1
-            elif (datetime(row['date']).hour % 4 == 0) and start is None:
+            elif (row['date'].hour % 4 == 0) and start is None:
                 start = idx+1
 
                 date = candles_df.at[end-1,'date']
@@ -66,6 +67,7 @@ class CoinbaseWrapper(object):
 
                 # reset index's
                 start, end = None, start
+        #four_hour_candles.reverse()
         return pd.DataFrame(four_hour_candles, columns=['date','low','high','open','close','volume'])
 
     def get_current_price(self):
