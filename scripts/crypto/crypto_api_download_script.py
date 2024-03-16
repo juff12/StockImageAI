@@ -6,28 +6,57 @@ from datetime import date
 import tqdm
 
 def get_ticker_data(presets: tuple, client: RESTClient):
-    ticker, multiplier, timespan, start, end, limit = presets
-    aggs = []
-    _ticker = "X:" + ticker #format the ticker
-    for a in client.list_aggs(ticker=_ticker, multiplier=multiplier, 
-                              timespan=timespan, from_=start, to=end, limit=limit):
-        aggs.append(a)
+    """
+    Fetches ticker data from a REST API and saves it to a CSV file.
 
+    Args:
+        presets (tuple): A tuple containing the preset values for ticker, multiplier, timespan, start, end, and limit.
+        client (RESTClient): An instance of the RESTClient class used to make API requests.
+
+    Returns:
+        None
+    """
+    # Extract the values from the presets tuple
+    ticker, multiplier, timespan, start, end, limit = presets
+    # Format the ticker
+    _ticker = "X:" + ticker
+    
+    # Fetch the aggregated data from the API
+    aggs = []
+    for a in client.list_aggs(ticker=_ticker, multiplier=multiplier, timespan=timespan, from_=start, to=end, limit=limit):
+        aggs.append(a)
+    
     df = pd.DataFrame(aggs)
-    filestring = 'data/crypto/data/raw/{t}/{t}_{m}_{b}_data_raw.csv'.format(t=str(ticker).lower(),
-                                                                            m=str(multiplier),
-                                                                            b=timespan)
+    
+    # Define the file path for saving the data
+    filestring = 'data/crypto/data/raw/{t}/{t}_{m}_{b}_data_raw.csv'.format(t=str(ticker).lower(), m=str(multiplier), b=timespan)
     filepath = Path(filestring)
+    # Create the directory if it doesn't exist
     filepath.parent.mkdir(parents=True, exist_ok=True)
+    # Save the DataFrame to a CSV file
     df.to_csv(filepath)
 
-# code of scipt
+
 def main():
+    """
+    Main function to download ticker data from a cryptocurrency API.
+
+    Reads in the iterables for coinbase tickers and time intervals.
+    Connects to the API using the provided API key.
+    Sets presets for start date, end date, and data limit.
+    Loops through each ticker and time interval to download the ticker data.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     # read in the iterables
     coinbase_tickers = pickle.load(open('data/crypto/iterables/coinbase_tickers.pkl', 'rb'))
     time_intervals = pickle.load(open('data/crypto/iterables/time_intervals.pkl', 'rb'))
     
-    # yapi key
+    # api key
     api_key = ""
 
     # connect to API
@@ -38,7 +67,7 @@ def main():
     end = date.today().strftime('%Y-%m-%d')
     limit = 50000
 
-    # # daily data
+    # loop through each ticker and time interval
     for ticker in tqdm(coinbase_tickers):
         for bartime in time_intervals:
             multiplier, timespan = bartime.split('_')
