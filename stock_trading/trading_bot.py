@@ -8,6 +8,20 @@ import time
 
 
 class TradingBot(object):
+    """
+    A class representing a trading bot for stock trading.
+
+    Parameters:
+    - ticker (str): The ticker symbol of the stock.
+    - bartime (str): The time interval for fetching stock data.
+    - api_key (str): The API key for accessing stock data.
+    - open_strategy (str): The opening strategy for placing trades.
+    - close_strategy (str): The closing strategy for closing trades.
+    - allow_shorts (bool): Whether short selling is allowed.
+    - _type (str): The type of trading (e.g., stock, cryptocurrency).
+    - model_type (str): The type of model used for predicting stock prices.
+    """
+
     def __init__(self, ticker, bartime, api_key,
                  open_strategy='normal', close_strategy='normal',
                  allow_shorts=False, _type='stock', model_type='gaussian'):
@@ -37,6 +51,9 @@ class TradingBot(object):
         self.coinbase = CoinbaseWrapper(ticker)
 
     def _init_logger(self):
+        """
+        Initialize the logger for logging trading bot activities.
+        """
         self._logger = logging.getLogger(__name__)
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
@@ -46,31 +63,86 @@ class TradingBot(object):
         self._logger.setLevel(logging.DEBUG)
     
     def get_timespan(self, step_size, step_unit, interval_size):
+        """
+        Calculate the timespan for a given step size, step unit, and interval size.
+
+        Parameters:
+        - step_size (int): The size of each step.
+        - step_unit (str): The unit of each step (e.g., day, hour, minute).
+        - interval_size (int): The size of the interval.
+
+        Returns:
+        - timespan (int): The calculated timespan.
+        """
         return (step_size * interval_size if step_unit==name else 0 for name in ['day','hour','minute'])
     
     def get_current_price(self):
+        """
+        Get the current price of the stock.
+
+        Returns:
+        - current_price (float): The current price of the stock.
+        """
+        # format the ticker
         from_, to_ = self.ticker.upper().split('USD')[0], 'USD'
+        # get the last price
         last_trade = self.client.get_last_crypto_trade(from_=self._ticker)
         return last_trade.price
 
     def get_data_for_interval(self, step_size, step_unit, interval_size=11):
+        """
+        Get the stock data for a given time interval.
+
+        Parameters:
+        - step_size (int): The size of each step.
+        - step_unit (str): The unit of each step (e.g., day, hour, minute).
+        - interval_size (int): The size of the interval.
+
+        Returns:
+        - interval_data (pd.DataFrame): The stock data for the interval.
+        """
+        # get days, hours, minutes of the time interval ('5_minutes', '15_minutes', '1_hour', '4_hours', '1_day')
         days, hours, minutes = self.get_timespan(step_size, step_unit, interval_size)
+        # get all the information within the time interval for the time interval ('5_minutes', '15_minutes', '1_hour', '4_hours', '1_day')
         start = datetime.now() - timedelta(days=self.days, hours=self.hours, minutes=self.minutes)
         end = datetime.now()
+        # get the data for the time interval
         interval_data = [a for a in self.client.list_aggs(ticker=self._ticker, multiplier=step_size,
                                                           timespan=step_unit,from_=start, to=end)]
         interval_data = pd.DataFrame(interval_data)
         return interval_data
     
     def get_minute_open(self):
-        
+        """
+        Get the opening price for the current minute.
+
+        Returns:
+        - minute_open (float): The opening price for the current minute.
+        """
         return
 
     def get_minute_close(self):
+        """
+        Get the closing price for the current minute.
+
+        Returns:
+        - minute_close (float): The closing price for the current minute.
+        """
         min_close = self.client.get_snapshot_ticker(ticker=self._ticker).min.close
         return min_close
 
     def predict_price(self, open_price=None, step_size=None, step_unit=None):
+        """
+        Predict the price for the next time interval.
+
+        Parameters:
+        - open_price (float): The opening price for the current interval.
+        - step_size (int): The size of each step.
+        - step_unit (str): The unit of each step (e.g., day, hour, minute).
+
+        Returns:
+        - predicted_price (float): The predicted price for the next time interval.
+        """
         if open_price is None:
             open_price = self.get_minute_open()
         # detect unitialized steps
@@ -84,7 +156,18 @@ class TradingBot(object):
         # predict the close on the given data
         return self.predictor.predict_next_timeframe_price(interval_data)
     
-    def check_time(self, step_size, step_unit): # check if this is fast enough
+    def check_time(self, step_size, step_unit):
+        """
+        Check if the current time is a valid time for placing a trade.
+
+        Parameters:
+        - step_size (int): The size of each step.
+        - step_unit (str): The unit of each step (e.g., day, hour, minute).
+
+        Returns:
+        - is_valid_time (bool): True if the current time is a valid time for placing a trade, False otherwise.
+        """
+        # get the current time and check that it is the end of interval (True) or not (False
         time = datetime.now()
         time_dict = {'day': time.day, 'hour': time.hour, 'minute': time.minute}
         interval = time_dict[step_unit]
@@ -93,14 +176,28 @@ class TradingBot(object):
         return False
     
     def get_step_price(self, step_size, step_unit):
+        """
+        Get the predicted price for the next time interval based on the step size and step unit.
+
+        Parameters:
+        - step_size (int): The size of each step.
+        - step_unit (str): The unit of each step (e.g., day, hour, minute).
+
+        Returns:
+        - predicted_price (float): The predicted price for the next time interval.
+        """
         while True:
             if self.check_time(step_size, step_unit):
                 break
         return self.predict_price(step_size, step_unit)
 
     def close_trade(self):
-        
-        
+        """
+        Close the current trade.
+
+        Returns:
+        - is_trade_closed (bool): True if the trade is closed, False otherwise.
+        """
         # place the limits orders, update acording to strategy
         # update until trade closes
         # emergency market close
@@ -111,6 +208,12 @@ class TradingBot(object):
         return True
 
     def open_trade(self):
+        """
+        Open a new trade.
+
+        Returns:
+        - trade_strategy (tuple): The opening trade strategy and the predicted closing price.
+        """
         # get the predicted price
         open_price = self.get_minute_open()
         pred_price = self.predict_price(open_price)
@@ -120,6 +223,17 @@ class TradingBot(object):
         return self.open_strategy(open_price, pred_price)
         
     def normal_open(self, open_price, pred_price, tol=0.005):
+        """
+        Define the opening trade strategy for normal trading.
+
+        Parameters:
+        - open_price (float): The opening price for the current interval.
+        - pred_price (float): The predicted closing price for the current interval.
+        - tol (float): The tolerance for placing the trade.
+
+        Returns:
+        - trade_strategy (tuple): The opening trade strategy and the predicted closing price.
+        """
         # return a opening trade strategy and the predicted closing price
         current_price = self.get_current_price()
         if open_price < pred_price:
@@ -127,6 +241,17 @@ class TradingBot(object):
         return ([(current_price - current_price * tol, 1.0)], pred_price)
 
     def layered_open(self, open_price, pred_price, num=5):
+        """
+        Define the opening trade strategy for layered trading.
+
+        Parameters:
+        - open_price (float): The opening price for the current interval.
+        - pred_price (float): The predicted closing price for the current interval.
+        - num (int): The number of layers for placing the trade.
+
+        Returns:
+        - trade_strategy (tuple): The opening trade strategy and the predicted closing price.
+        """
         local_minmax = self.getLocalMinMax()
         if local_minmax < open_price:
             # creates a layered order of five orders split evenly between 
@@ -140,6 +265,18 @@ class TradingBot(object):
             return ([(order_price, 1/num) for order_price in layered_order], pred_price)
     
     def stocastic_open(self, open_price, pred_price, temp=10, tol=0.005):
+        """
+        Define the opening trade strategy for stocastic trading.
+
+        Parameters:
+        - open_price (float): The opening price for the current interval.
+        - pred_price (float): The predicted closing price for the current interval.
+        - temp (int): The temperature for stocastic trading.
+        - tol (float): The tolerance for placing the trade.
+
+        Returns:
+        - trade_strategy (tuple): The opening trade strategy and the predicted closing price.
+        """
         if open_price < pred_price:
             # longing
             prev_price = self.get_current_price()
@@ -158,15 +295,43 @@ class TradingBot(object):
             return None
 
     def stocastic_layered_open(self, open_price, pred_price,):
+        """
+        Define the opening trade strategy for stocastic layered trading.
+
+        Parameters:
+        - open_price (float): The opening price for the current interval.
+        - pred_price (float): The predicted closing price for the current interval.
+
+        Returns:
+        - trade_strategy (tuple): The opening trade strategy and the predicted closing price.
+        """
         return None
 
     def hmm_strategy(self):
+        """
+        Define the closing trade strategy using the Hidden Markov Model (HMM).
+
+        Returns:
+        - trade_strategy (tuple): The closing trade strategy and the predicted closing price.
+        """
         return None
     
     def hill_climbing(self):
+        """
+        Define the closing trade strategy using the Hill Climbing algorithm.
+
+        Returns:
+        - trade_strategy (tuple): The closing trade strategy and the predicted closing price.
+        """
         return None
 
     def simulated_annealing(self):
+        """
+        Define the closing trade strategy using the Simulated Annealing algorithm.
+
+        Returns:
+        - trade_strategy (tuple): The closing trade strategy and the predicted closing price.
+        """
         # this function is called at the start of the inverval, grab the prediction
         self.interval_pred = self.predict_price(self._multiplier, self._timespan)
 
@@ -188,4 +353,10 @@ class TradingBot(object):
         return
     
     def getLocalMinMax(self):
+        """
+        Get the local minimum and maximum prices for the stock.
+
+        Returns:
+        - local_minmax (float): The local minimum and maximum prices for the stock.
+        """
         return None

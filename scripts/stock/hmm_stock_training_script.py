@@ -4,6 +4,17 @@ import pandas as pd
 from pathlib import Path
 
 def main():
+    """
+    Main function for training a stock trading model using Hidden Markov Models (HMM).
+
+    Reads in the iterables for S&P500 tickers, NASDAQ 100 tickers, and time intervals.
+    Creates a model for each stock in S&P500 and predicts close prices for a specified number of days.
+    Calculates and saves the Mean Absolute Percentage Error (MAPE) for each stock and time interval.
+    Saves the MAPEs in a CSV file.
+
+    Returns:
+        None
+    """
     # read in the iterables
     sp500_tickers = pickle.load(open('data/stock/iterables/sp500_tickers.pkl', 'rb'))
     nasdaq_100_tickers = pickle.load(open('data/stock/iterables/nasdaq_100_tickers.pkl', 'rb'))
