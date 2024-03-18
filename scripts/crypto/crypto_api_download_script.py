@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 import pickle
 from datetime import date
-import tqdm
+from tqdm import tqdm
 
 def get_ticker_data(presets: tuple, client: RESTClient):
     """
